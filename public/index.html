@@ -527,13 +527,14 @@
 
     async function save() {
       if (!selFips) return;
+      const fips   = selFips;
       const status = selStatus;
       const notes  = document.getElementById('notes').value.trim();
-      db[selFips] = { status, notes };
+      db[fips] = { status, notes };
       refreshCounters();
-      d3.select(`.county[data-fips="${selFips}"]`).attr('fill', colorOf(selFips));
+      d3.select(`.county[data-fips="${fips}"]`).attr('fill', colorOf(fips));
       closePanel();
-      await saveToAPI(selFips, status, notes);
+      await saveToAPI(fips, status, notes);
     }
 
     document.querySelectorAll('.s-opt').forEach(el => {
