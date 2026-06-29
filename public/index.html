@@ -127,6 +127,29 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+      z-index: 300;
+      pointer-events: none;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+      opacity: 0;
+      white-space: nowrap;
+    }
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    #toast.success { background: #16a34a; }
+    #toast.error   { background: #dc2626; }
+
     #status-msg {
       position: absolute;
       inset: 0;
@@ -362,6 +385,7 @@
   </div>
 
   <div id="tip"></div>
+  <div id="toast"></div>
 
   <script>
     'use strict';
@@ -426,15 +450,27 @@
       }
     }
 
+    let toastTimer;
+    function showToast(msg, type) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `show ${type}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.className = ''; }, 2500);
+    }
+
     async function saveToAPI(fips, status, notes) {
       try {
-        await fetch('/api/county', {
+        const res = await fetch('/api/county', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fips, status, notes })
         });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showToast('Saved ✓', 'success');
       } catch (err) {
         console.error('Save failed:', err);
+        showToast('Save failed — check server', 'error');
       }
     }
 

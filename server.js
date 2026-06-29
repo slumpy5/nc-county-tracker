@@ -10,6 +10,8 @@ if (process.env.NODE_ENV === 'production' && !process.env.DB_PATH) {
   console.warn('WARNING: DB_PATH not set — data will be lost on redeploy. Set DB_PATH to your Render Disk mount path (e.g. /data/counties.db).');
 }
 
+console.log(`Using database at: ${DB_PATH}`);
+
 const db = new DatabaseSync(DB_PATH);
 db.exec('PRAGMA journal_mode = WAL');
 db.exec(`
@@ -24,6 +26,10 @@ db.exec(`
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true, db: DB_PATH });
+});
 
 // Return all county assignments
 app.get('/api/counties', (req, res) => {
