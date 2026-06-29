@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: nc-county-tracker
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Set this in the Render dashboard to your Disk mount path + filename
+      # e.g. /data/counties.db  (after attaching a Disk to this service)
+      - key: DB_PATH
+        sync: false

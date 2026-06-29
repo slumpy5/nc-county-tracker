@@ -366,8 +366,6 @@
   <script>
     'use strict';
 
-    const STORE_KEY = 'nc-county-tracker-v1';
-
     const COLORS = {
       easy:        '#22c55e',
       simple:      '#eab308',
@@ -416,14 +414,28 @@
     let selFips = null;
     let selStatus = null;
 
-    // ── Persistence ────────────────────────────────────────
-    function loadDB() {
-      try { db = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
-      catch { db = {}; }
+    // ── Persistence (server API) ───────────────────────────
+    async function fetchDB() {
+      try {
+        const res = await fetch('/api/counties');
+        if (!res.ok) throw new Error('server error');
+        db = await res.json();
+      } catch (err) {
+        console.warn('Could not load county data:', err);
+        db = {};
+      }
     }
 
-    function saveDB() {
-      localStorage.setItem(STORE_KEY, JSON.stringify(db));
+    async function saveToAPI(fips, status, notes) {
+      try {
+        await fetch('/api/county', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fips, status, notes })
+        });
+      } catch (err) {
+        console.error('Save failed:', err);
+      }
     }
 
     // ── Helpers ────────────────────────────────────────────
@@ -476,16 +488,15 @@
       renderStatusOpts();
     }
 
-    function save() {
+    async function save() {
       if (!selFips) return;
-      db[selFips] = {
-        status: selStatus,
-        notes:  document.getElementById('notes').value.trim()
-      };
-      saveDB();
+      const status = selStatus;
+      const notes  = document.getElementById('notes').value.trim();
+      db[selFips] = { status, notes };
       refreshCounters();
       d3.select(`.county[data-fips="${selFips}"]`).attr('fill', colorOf(selFips));
       closePanel();
+      await saveToAPI(selFips, status, notes);
     }
 
     document.querySelectorAll('.s-opt').forEach(el => {
@@ -498,7 +509,7 @@
 
     // ── Map ────────────────────────────────────────────────
     async function init() {
-      loadDB();
+      await fetchDB();
       refreshCounters();
 
       const wrap = document.getElementById('map-wrap');
