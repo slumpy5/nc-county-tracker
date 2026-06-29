@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NC County Tracker</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson@3/dist/topojson.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f1f5f9;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      background: #0f172a;
+      color: white;
+      padding: 13px 22px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-size: 16px;
+      font-weight: 700;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+
+    .divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(255,255,255,0.15);
+      flex-shrink: 0;
+    }
+
+    .counters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 4px 11px;
+      border-radius: 99px;
+      font-size: 13px;
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .badge-label { color: rgba(255,255,255,0.6); }
+    .badge-count { font-weight: 700; color: white; }
+
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #map-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #map-wrap svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .county {
+      cursor: pointer;
+      stroke: white;
+      stroke-width: 0.5;
+      transition: stroke-width 0.08s;
+    }
+
+    .county:hover { stroke: #1e293b; stroke-width: 1.8; }
+    .county.active { stroke: #0f172a; stroke-width: 2.5; }
+
+    .county-label {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 7px;
+      font-weight: 600;
+      fill: #1e293b;
+      text-anchor: middle;
+      dominant-baseline: central;
+      pointer-events: none;
+      paint-order: stroke fill;
+      stroke: rgba(255,255,255,0.85);
+      stroke-width: 2.5px;
+      stroke-linejoin: round;
+      letter-spacing: 0.01em;
+    }
+
+    #tip {
+      position: fixed;
+      background: rgba(15, 23, 42, 0.92);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      pointer-events: none;
+      white-space: nowrap;
+      display: none;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    #status-msg {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 15px;
+      gap: 10px;
+    }
+
+    /* Side panel */
+    #panel {
+      width: 0;
+      background: white;
+      border-left: 1px solid #e2e8f0;
+      overflow: hidden;
+      transition: width 0.22s ease;
+      flex-shrink: 0;
+    }
+
+    #panel.open { width: 310px; }
+
+    .panel-inner {
+      width: 310px;
+      padding: 22px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+      height: 100%;
+    }
+
+    .panel-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    #panel-name {
+      font-size: 19px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+
+    .x-btn {
+      background: #f1f5f9;
+      border: none;
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .x-btn:hover { background: #e2e8f0; color: #334155; }
+
+    .sec-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+
+    .status-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .s-opt {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 500;
+      background: #f8fafc;
+      color: #475569;
+      transition: background 0.08s, border-color 0.08s;
+      user-select: none;
+    }
+
+    .s-opt:hover { background: #f1f5f9; }
+
+    .s-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .s-opt[data-s="easy"]        { }
+    .s-opt[data-s="easy"].sel    { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
+    .s-opt[data-s="simple"].sel  { background: #fefce8; border-color: #ca8a04; color: #92400e; }
+    .s-opt[data-s="complicated"].sel { background: #fff7ed; border-color: #ea580c; color: #c2410c; }
+    .s-opt[data-s="hard"].sel    { background: #fef2f2; border-color: #dc2626; color: #b91c1c; }
+
+    .notes-wrap { display: flex; flex-direction: column; }
+
+    textarea#notes {
+      resize: vertical;
+      min-height: 110px;
+      padding: 10px 11px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #334155;
+      line-height: 1.55;
+      background: #fafafa;
+    }
+
+    textarea#notes:focus {
+      outline: none;
+      border-color: #94a3b8;
+      background: white;
+    }
+
+    #save-btn {
+      width: 100%;
+      padding: 12px;
+      background: #0f172a;
+      color: white;
+      border: none;
+      border-radius: 9px;
+      font-size: 14.5px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: -0.01em;
+      transition: background 0.1s;
+    }
+
+    #save-btn:hover { background: #1e293b; }
+
+    .clear-link {
+      text-align: center;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #94a3b8;
+      cursor: pointer;
+      user-select: none;
+    }
+    .clear-link:hover { color: #64748b; text-decoration: underline; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>NC County Tracker</h1>
+    <div class="divider"></div>
+    <div class="counters">
+      <div class="badge">
+        <div class="badge-dot" style="background:#22c55e"></div>
+        <span class="badge-label">Easy/Done</span>
+        <span class="badge-count" id="c-easy">0</span>
+      </div>
+      <div class="badge">
+        <div class="badge-dot" style="background:#eab308"></div>
+        <span class="badge-label">Simple</span>
+        <span class="badge-count" id="c-simple">0</span>
+      </div>
+      <div class="badge">
+        <div class="badge-dot" style="background:#f97316"></div>
+        <span class="badge-label">Complicated</span>
+        <span class="badge-count" id="c-complicated">0</span>
+      </div>
+      <div class="badge">
+        <div class="badge-dot" style="background:#ef4444"></div>
+        <span class="badge-label">Hard</span>
+        <span class="badge-count" id="c-hard">0</span>
+      </div>
+      <div class="badge">
+        <div class="badge-dot" style="background:#94a3b8"></div>
+        <span class="badge-label">Unassigned</span>
+        <span class="badge-count" id="c-none">100</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="main">
+    <div id="map-wrap">
+      <div id="status-msg">Loading NC county data…</div>
+    </div>
+
+    <div id="panel">
+      <div class="panel-inner">
+        <div class="panel-top">
+          <div id="panel-name"></div>
+          <button class="x-btn" onclick="closePanel()" title="Close">✕</button>
+        </div>
+
+        <div>
+          <div class="sec-label">Status</div>
+          <div class="status-list">
+            <div class="s-opt" data-s="easy">
+              <div class="s-dot" style="background:#22c55e"></div>Easy / Done
+            </div>
+            <div class="s-opt" data-s="simple">
+              <div class="s-dot" style="background:#eab308"></div>Simple
+            </div>
+            <div class="s-opt" data-s="complicated">
+              <div class="s-dot" style="background:#f97316"></div>Complicated but Achievable
+            </div>
+            <div class="s-opt" data-s="hard">
+              <div class="s-dot" style="background:#ef4444"></div>Hard
+            </div>
+          </div>
+        </div>
+
+        <div class="notes-wrap">
+          <div class="sec-label">Notes</div>
+          <textarea id="notes" placeholder="Add notes about this county…"></textarea>
+        </div>
+
+        <div>
+          <button id="save-btn" onclick="save()">Save Changes</button>
+          <div class="clear-link" onclick="clearStatus()">Clear status</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tip"></div>
+
+  <script>
+    'use strict';
+
+    const STORE_KEY = 'nc-county-tracker-v1';
+
+    const COLORS = {
+      easy:        '#22c55e',
+      simple:      '#eab308',
+      complicated: '#f97316',
+      hard:        '#ef4444',
+      none:        '#dde3ed'
+    };
+
+    const STATUS_LABELS = {
+      easy:        'Easy / Done',
+      simple:      'Simple',
+      complicated: 'Complicated but Achievable',
+      hard:        'Hard'
+    };
+
+    const COUNTIES = {
+      "37001":"Alamance","37003":"Alexander","37005":"Alleghany","37007":"Anson",
+      "37009":"Ashe","37011":"Avery","37013":"Beaufort","37015":"Bertie",
+      "37017":"Bladen","37019":"Brunswick","37021":"Buncombe","37023":"Burke",
+      "37025":"Cabarrus","37027":"Caldwell","37029":"Camden","37031":"Carteret",
+      "37033":"Caswell","37035":"Catawba","37037":"Chatham","37039":"Cherokee",
+      "37041":"Chowan","37043":"Clay","37045":"Cleveland","37047":"Columbus",
+      "37049":"Craven","37051":"Cumberland","37053":"Currituck","37055":"Dare",
+      "37057":"Davidson","37059":"Davie","37061":"Duplin","37063":"Durham",
+      "37065":"Edgecombe","37067":"Forsyth","37069":"Franklin","37071":"Gaston",
+      "37073":"Gates","37075":"Graham","37077":"Granville","37079":"Greene",
+      "37081":"Guilford","37083":"Halifax","37085":"Harnett","37087":"Haywood",
+      "37089":"Henderson","37091":"Hertford","37093":"Hoke","37095":"Hyde",
+      "37097":"Iredell","37099":"Jackson","37101":"Johnston","37103":"Jones",
+      "37105":"Lee","37107":"Lenoir","37109":"Lincoln","37111":"McDowell",
+      "37113":"Macon","37115":"Madison","37117":"Martin","37119":"Mecklenburg",
+      "37121":"Mitchell","37123":"Montgomery","37125":"Moore","37127":"Nash",
+      "37129":"New Hanover","37131":"Northampton","37133":"Onslow","37135":"Orange",
+      "37137":"Pamlico","37139":"Pasquotank","37141":"Pender","37143":"Perquimans",
+      "37145":"Person","37147":"Pitt","37149":"Polk","37151":"Randolph",
+      "37153":"Richmond","37155":"Robeson","37157":"Rockingham","37159":"Rowan",
+      "37161":"Rutherford","37163":"Sampson","37165":"Scotland","37167":"Stanly",
+      "37169":"Stokes","37171":"Surry","37173":"Swain","37175":"Transylvania",
+      "37177":"Tyrrell","37179":"Union","37181":"Vance","37183":"Wake",
+      "37185":"Warren","37187":"Washington","37189":"Watauga","37191":"Wayne",
+      "37193":"Wilkes","37195":"Wilson","37197":"Yadkin","37199":"Yancey"
+    };
+
+    // ── State ──────────────────────────────────────────────
+    let db = {};          // { [fips]: { status, notes } }
+    let selFips = null;
+    let selStatus = null;
+
+    // ── Persistence ────────────────────────────────────────
+    function loadDB() {
+      try { db = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+      catch { db = {}; }
+    }
+
+    function saveDB() {
+      localStorage.setItem(STORE_KEY, JSON.stringify(db));
+    }
+
+    // ── Helpers ────────────────────────────────────────────
+    function colorOf(fips) {
+      return COLORS[db[fips]?.status] ?? COLORS.none;
+    }
+
+    function fipsOf(d) {
+      return String(d.id).padStart(5, '0');
+    }
+
+    // ── Counters ───────────────────────────────────────────
+    function refreshCounters() {
+      const cnt = { easy: 0, simple: 0, complicated: 0, hard: 0 };
+      for (const v of Object.values(db)) {
+        if (v.status && cnt[v.status] !== undefined) cnt[v.status]++;
+      }
+      const assigned = cnt.easy + cnt.simple + cnt.complicated + cnt.hard;
+      document.getElementById('c-easy').textContent        = cnt.easy;
+      document.getElementById('c-simple').textContent      = cnt.simple;
+      document.getElementById('c-complicated').textContent = cnt.complicated;
+      document.getElementById('c-hard').textContent        = cnt.hard;
+      document.getElementById('c-none').textContent        = Object.keys(COUNTIES).length - assigned;
+    }
+
+    // ── Panel ──────────────────────────────────────────────
+    function openPanel(fips) {
+      selFips   = fips;
+      selStatus = db[fips]?.status ?? null;
+      document.getElementById('panel-name').textContent = COUNTIES[fips] + ' County';
+      document.getElementById('notes').value = db[fips]?.notes ?? '';
+      renderStatusOpts();
+      document.getElementById('panel').classList.add('open');
+    }
+
+    function closePanel() {
+      document.getElementById('panel').classList.remove('open');
+      d3.selectAll('.county').classed('active', false);
+      selFips = selStatus = null;
+    }
+
+    function renderStatusOpts() {
+      document.querySelectorAll('.s-opt').forEach(el => {
+        el.classList.toggle('sel', el.dataset.s === selStatus);
+      });
+    }
+
+    function clearStatus() {
+      selStatus = null;
+      renderStatusOpts();
+    }
+
+    function save() {
+      if (!selFips) return;
+      db[selFips] = {
+        status: selStatus,
+        notes:  document.getElementById('notes').value.trim()
+      };
+      saveDB();
+      refreshCounters();
+      d3.select(`.county[data-fips="${selFips}"]`).attr('fill', colorOf(selFips));
+      closePanel();
+    }
+
+    document.querySelectorAll('.s-opt').forEach(el => {
+      el.addEventListener('click', () => {
+        // Clicking the already-selected status deselects it
+        selStatus = (el.dataset.s === selStatus) ? null : el.dataset.s;
+        renderStatusOpts();
+      });
+    });
+
+    // ── Map ────────────────────────────────────────────────
+    async function init() {
+      loadDB();
+      refreshCounters();
+
+      const wrap = document.getElementById('map-wrap');
+      const tip  = document.getElementById('tip');
+
+      try {
+        const us = await d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json');
+
+        document.getElementById('status-msg').remove();
+
+        const allCounties = topojson.feature(us, us.objects.counties);
+        const ncFeats = allCounties.features.filter(f => String(f.id).startsWith('37'));
+        const ncCollection = { type: 'FeatureCollection', features: ncFeats };
+
+        const W = wrap.clientWidth;
+        const H = wrap.clientHeight;
+        const pad = 28;
+
+        const proj = d3.geoMercator()
+          .fitExtent([[pad, pad], [W - pad, H - pad]], ncCollection);
+        const pathGen = d3.geoPath().projection(proj);
+
+        const svg = d3.select(wrap).append('svg')
+          .attr('viewBox', `0 0 ${W} ${H}`)
+          .style('width', '100%')
+          .style('height', '100%');
+
+        svg.selectAll('.county')
+          .data(ncFeats)
+          .join('path')
+          .attr('class', 'county')
+          .attr('data-fips', d => fipsOf(d))
+          .attr('d', pathGen)
+          .attr('fill', d => colorOf(fipsOf(d)))
+          .on('mouseenter', function(event, d) {
+            const fips = fipsOf(d);
+            const name = COUNTIES[fips] || fips;
+            const s    = db[fips]?.status;
+            tip.textContent = name + ' County' + (s ? '  ·  ' + STATUS_LABELS[s] : '');
+            tip.style.display = 'block';
+          })
+          .on('mousemove', function(event) {
+            tip.style.left = (event.clientX + 14) + 'px';
+            tip.style.top  = (event.clientY - 40) + 'px';
+          })
+          .on('mouseleave', function() {
+            tip.style.display = 'none';
+          })
+          .on('click', function(event, d) {
+            tip.style.display = 'none';
+            const fips = fipsOf(d);
+            d3.selectAll('.county').classed('active', false);
+            d3.select(this).classed('active', true);
+            openPanel(fips);
+          });
+
+        svg.selectAll('.county-label')
+          .data(ncFeats)
+          .join('text')
+          .attr('class', 'county-label')
+          .attr('x', d => pathGen.centroid(d)[0])
+          .attr('y', d => pathGen.centroid(d)[1])
+          .text(d => COUNTIES[fipsOf(d)] || '');
+
+      } catch (err) {
+        const msg = document.getElementById('status-msg');
+        if (msg) msg.textContent = '⚠ Could not load map data — check your internet connection.';
+        console.error(err);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
