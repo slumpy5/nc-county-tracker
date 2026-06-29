@@ -466,11 +466,12 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fips, status, notes })
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
         showToast('Saved ✓', 'success');
       } catch (err) {
         console.error('Save failed:', err);
-        showToast('Save failed — check server', 'error');
+        showToast(`Error: ${err.message}`, 'error');
       }
     }
 

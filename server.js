@@ -43,19 +43,26 @@ app.get('/api/counties', (req, res) => {
 
 // Save / update one county
 app.post('/api/county', (req, res) => {
-  const { fips, status, notes } = req.body || {};
-  if (!fips || !/^\d{5}$/.test(fips)) {
-    return res.status(400).json({ error: 'invalid fips' });
+  console.log('POST /api/county body:', JSON.stringify(req.body));
+  try {
+    const { fips, status, notes } = req.body || {};
+    if (!fips || !/^\d{5}$/.test(fips)) {
+      return res.status(400).json({ error: `invalid fips: ${fips}` });
+    }
+    db.prepare(`
+      INSERT INTO counties (fips, status, notes, updated_at)
+      VALUES (?, ?, ?, datetime('now'))
+      ON CONFLICT(fips) DO UPDATE SET
+        status     = excluded.status,
+        notes      = excluded.notes,
+        updated_at = excluded.updated_at
+    `).run(fips, status || null, notes || null);
+    console.log('Saved county:', fips, status);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Save error:', err.message);
+    res.status(500).json({ error: err.message });
   }
-  db.prepare(`
-    INSERT INTO counties (fips, status, notes, updated_at)
-    VALUES (?, ?, ?, datetime('now'))
-    ON CONFLICT(fips) DO UPDATE SET
-      status     = excluded.status,
-      notes      = excluded.notes,
-      updated_at = excluded.updated_at
-  `).run(fips, status || null, notes || null);
-  res.json({ ok: true });
 });
 
 const PORT = process.env.PORT || 3000;
