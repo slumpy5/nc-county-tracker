@@ -253,11 +253,11 @@
       flex-shrink: 0;
     }
 
-    .s-opt[data-s="easy"]        { }
-    .s-opt[data-s="easy"].sel    { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
-    .s-opt[data-s="simple"].sel  { background: #fefce8; border-color: #ca8a04; color: #92400e; }
-    .s-opt[data-s="complicated"].sel { background: #fff7ed; border-color: #ea580c; color: #c2410c; }
-    .s-opt[data-s="hard"].sel    { background: #fef2f2; border-color: #dc2626; color: #b91c1c; }
+    .s-opt[data-s="fcc"].sel     { background: #f0fdf4; border-color: #16a34a; color: #14532d; }
+    .s-opt[data-s="partner"].sel { background: #dcfce7; border-color: #4ade80; color: #166534; }
+    .s-opt[data-s="county"].sel  { background: #d1fae5; border-color: #6ee7b7; color: #065f46; }
+    .s-opt[data-s="oneoff"].sel  { background: #fff7ed; border-color: #ea580c; color: #c2410c; }
+    .s-opt[data-s="knock"].sel   { background: #fef2f2; border-color: #dc2626; color: #b91c1c; }
 
     .notes-wrap { display: flex; flex-direction: column; }
 
@@ -314,24 +314,29 @@
     <div class="divider"></div>
     <div class="counters">
       <div class="badge">
-        <div class="badge-dot" style="background:#22c55e"></div>
-        <span class="badge-label">Easy/Done</span>
-        <span class="badge-count" id="c-easy">0</span>
+        <div class="badge-dot" style="background:#16a34a"></div>
+        <span class="badge-label">FCC Vol Led</span>
+        <span class="badge-count" id="c-fcc">0</span>
       </div>
       <div class="badge">
-        <div class="badge-dot" style="background:#eab308"></div>
-        <span class="badge-label">Simple</span>
-        <span class="badge-count" id="c-simple">0</span>
+        <div class="badge-dot" style="background:#4ade80"></div>
+        <span class="badge-label">Partner Launch</span>
+        <span class="badge-count" id="c-partner">0</span>
+      </div>
+      <div class="badge">
+        <div class="badge-dot" style="background:#6ee7b7"></div>
+        <span class="badge-label">County Party</span>
+        <span class="badge-count" id="c-county">0</span>
       </div>
       <div class="badge">
         <div class="badge-dot" style="background:#f97316"></div>
-        <span class="badge-label">Complicated</span>
-        <span class="badge-count" id="c-complicated">0</span>
+        <span class="badge-label">Staff One-off</span>
+        <span class="badge-count" id="c-oneoff">0</span>
       </div>
       <div class="badge">
         <div class="badge-dot" style="background:#ef4444"></div>
-        <span class="badge-label">Hard</span>
-        <span class="badge-count" id="c-hard">0</span>
+        <span class="badge-label">Staff Knock</span>
+        <span class="badge-count" id="c-knock">0</span>
       </div>
       <div class="badge">
         <div class="badge-dot" style="background:#94a3b8"></div>
@@ -356,17 +361,20 @@
         <div>
           <div class="sec-label">Status</div>
           <div class="status-list">
-            <div class="s-opt" data-s="easy">
-              <div class="s-dot" style="background:#22c55e"></div>Easy / Done
+            <div class="s-opt" data-s="fcc">
+              <div class="s-dot" style="background:#16a34a"></div>FCC Vol Led
             </div>
-            <div class="s-opt" data-s="simple">
-              <div class="s-dot" style="background:#eab308"></div>Simple
+            <div class="s-opt" data-s="partner">
+              <div class="s-dot" style="background:#4ade80"></div>Bought-in partner launch
             </div>
-            <div class="s-opt" data-s="complicated">
-              <div class="s-dot" style="background:#f97316"></div>Complicated but Achievable
+            <div class="s-opt" data-s="county">
+              <div class="s-dot" style="background:#6ee7b7"></div>County Party Launch
             </div>
-            <div class="s-opt" data-s="hard">
-              <div class="s-dot" style="background:#ef4444"></div>Hard
+            <div class="s-opt" data-s="oneoff">
+              <div class="s-dot" style="background:#f97316"></div>Staff-led one-off launch
+            </div>
+            <div class="s-opt" data-s="knock">
+              <div class="s-dot" style="background:#ef4444"></div>Staff Knock
             </div>
           </div>
         </div>
@@ -391,18 +399,20 @@
     'use strict';
 
     const COLORS = {
-      easy:        '#22c55e',
-      simple:      '#eab308',
-      complicated: '#f97316',
-      hard:        '#ef4444',
-      none:        '#dde3ed'
+      fcc:     '#16a34a',
+      partner: '#4ade80',
+      county:  '#6ee7b7',
+      oneoff:  '#f97316',
+      knock:   '#ef4444',
+      none:    '#dde3ed'
     };
 
     const STATUS_LABELS = {
-      easy:        'Easy / Done',
-      simple:      'Simple',
-      complicated: 'Complicated but Achievable',
-      hard:        'Hard'
+      fcc:     'FCC Vol Led',
+      partner: 'Bought-in partner launch',
+      county:  'County Party Launch',
+      oneoff:  'Staff-led one-off launch',
+      knock:   'Staff Knock'
     };
 
     const COUNTIES = {
@@ -486,16 +496,17 @@
 
     // ── Counters ───────────────────────────────────────────
     function refreshCounters() {
-      const cnt = { easy: 0, simple: 0, complicated: 0, hard: 0 };
+      const cnt = { fcc: 0, partner: 0, county: 0, oneoff: 0, knock: 0 };
       for (const v of Object.values(db)) {
         if (v.status && cnt[v.status] !== undefined) cnt[v.status]++;
       }
-      const assigned = cnt.easy + cnt.simple + cnt.complicated + cnt.hard;
-      document.getElementById('c-easy').textContent        = cnt.easy;
-      document.getElementById('c-simple').textContent      = cnt.simple;
-      document.getElementById('c-complicated').textContent = cnt.complicated;
-      document.getElementById('c-hard').textContent        = cnt.hard;
-      document.getElementById('c-none').textContent        = Object.keys(COUNTIES).length - assigned;
+      const assigned = cnt.fcc + cnt.partner + cnt.county + cnt.oneoff + cnt.knock;
+      document.getElementById('c-fcc').textContent     = cnt.fcc;
+      document.getElementById('c-partner').textContent = cnt.partner;
+      document.getElementById('c-county').textContent  = cnt.county;
+      document.getElementById('c-oneoff').textContent  = cnt.oneoff;
+      document.getElementById('c-knock').textContent   = cnt.knock;
+      document.getElementById('c-none').textContent    = Object.keys(COUNTIES).length - assigned;
     }
 
     // ── Panel ──────────────────────────────────────────────
