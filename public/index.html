@@ -259,6 +259,27 @@
     .s-opt[data-s="oneoff"].sel  { background: #fff7ed; border-color: #ea580c; color: #c2410c; }
     .s-opt[data-s="knock"].sel   { background: #fef2f2; border-color: #dc2626; color: #b91c1c; }
 
+    .lock-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: #475569;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .lock-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #0f172a;
+    }
+
     .notes-wrap { display: flex; flex-direction: column; }
 
     textarea#notes {
@@ -379,6 +400,13 @@
           </div>
         </div>
 
+        <div>
+          <label class="lock-row">
+            <input type="checkbox" id="locked-cb">
+            Launch Locked?
+          </label>
+        </div>
+
         <div class="notes-wrap">
           <div class="sec-label">Notes</div>
           <textarea id="notes" placeholder="Add notes about this county…"></textarea>
@@ -444,9 +472,10 @@
     };
 
     // ── State ──────────────────────────────────────────────
-    let db = {};          // { [fips]: { status, notes } }
+    let db = {};          // { [fips]: { status, notes, locked } }
     let selFips = null;
     let selStatus = null;
+    let selLocked = false;
 
     // ── Persistence (server API) ───────────────────────────
     async function fetchDB() {
@@ -469,12 +498,12 @@
       toastTimer = setTimeout(() => { el.className = ''; }, 2500);
     }
 
-    async function saveToAPI(fips, status, notes) {
+    async function saveToAPI(fips, status, notes, locked) {
       try {
         const res = await fetch('/api/county', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fips, status, notes })
+          body: JSON.stringify({ fips, status, notes, locked })
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
@@ -486,8 +515,10 @@
     }
 
     // ── Helpers ────────────────────────────────────────────
-    function colorOf(fips) {
-      return COLORS[db[fips]?.status] ?? COLORS.none;
+    function fillOf(fips) {
+      const rec = db[fips];
+      if (!rec?.status) return COLORS.none;
+      return rec.locked ? COLORS[rec.status] : `url(#hatch-${rec.status})`;
     }
 
     function fipsOf(d) {
@@ -513,8 +544,10 @@
     function openPanel(fips) {
       selFips   = fips;
       selStatus = db[fips]?.status ?? null;
+      selLocked = !!db[fips]?.locked;
       document.getElementById('panel-name').textContent = COUNTIES[fips] + ' County';
       document.getElementById('notes').value = db[fips]?.notes ?? '';
+      document.getElementById('locked-cb').checked = selLocked;
       renderStatusOpts();
       document.getElementById('panel').classList.add('open');
     }
@@ -523,6 +556,7 @@
       document.getElementById('panel').classList.remove('open');
       d3.selectAll('.county').classed('active', false);
       selFips = selStatus = null;
+      selLocked = false;
     }
 
     function renderStatusOpts() {
@@ -541,11 +575,12 @@
       const fips   = selFips;
       const status = selStatus;
       const notes  = document.getElementById('notes').value.trim();
-      db[fips] = { status, notes };
+      const locked = selLocked;
+      db[fips] = { status, notes, locked };
       refreshCounters();
-      d3.select(`.county[data-fips="${fips}"]`).attr('fill', colorOf(fips));
+      d3.select(`.county[data-fips="${fips}"]`).attr('fill', fillOf(fips));
       closePanel();
-      await saveToAPI(fips, status, notes);
+      await saveToAPI(fips, status, notes, locked);
     }
 
     document.querySelectorAll('.s-opt').forEach(el => {
@@ -554,6 +589,10 @@
         selStatus = (el.dataset.s === selStatus) ? null : el.dataset.s;
         renderStatusOpts();
       });
+    });
+
+    document.getElementById('locked-cb').addEventListener('change', (e) => {
+      selLocked = e.target.checked;
     });
 
     // ── Map ────────────────────────────────────────────────
@@ -586,13 +625,32 @@
           .style('width', '100%')
           .style('height', '100%');
 
+        const defs = svg.append('defs');
+        Object.entries(COLORS).forEach(([key, color]) => {
+          const pattern = defs.append('pattern')
+            .attr('id', `hatch-${key}`)
+            .attr('width', 6)
+            .attr('height', 6)
+            .attr('patternUnits', 'userSpaceOnUse')
+            .attr('patternTransform', 'rotate(45)');
+          pattern.append('rect')
+            .attr('width', 6)
+            .attr('height', 6)
+            .attr('fill', color);
+          pattern.append('line')
+            .attr('x1', 0).attr('y1', 0)
+            .attr('x2', 0).attr('y2', 6)
+            .attr('stroke', 'white')
+            .attr('stroke-width', 2);
+        });
+
         svg.selectAll('.county')
           .data(ncFeats)
           .join('path')
           .attr('class', 'county')
           .attr('data-fips', d => fipsOf(d))
           .attr('d', pathGen)
-          .attr('fill', d => colorOf(fipsOf(d)))
+          .attr('fill', d => fillOf(fipsOf(d)))
           .on('mouseenter', function(event, d) {
             const fips = fipsOf(d);
             const name = COUNTIES[fips] || fips;

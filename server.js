@@ -19,9 +19,16 @@ db.exec(`
     fips       TEXT PRIMARY KEY,
     status     TEXT,
     notes      TEXT,
+    locked     INTEGER DEFAULT 0,
     updated_at TEXT DEFAULT (datetime('now'))
   )
 `);
+
+try {
+  db.exec('ALTER TABLE counties ADD COLUMN locked INTEGER DEFAULT 0');
+} catch (err) {
+  // column already exists
+}
 
 const app = express();
 app.use(express.json());
@@ -33,10 +40,10 @@ app.get('/api/health', (req, res) => {
 
 // Return all county assignments
 app.get('/api/counties', (req, res) => {
-  const rows = db.prepare('SELECT fips, status, notes FROM counties').all();
+  const rows = db.prepare('SELECT fips, status, notes, locked FROM counties').all();
   const out = {};
   for (const row of rows) {
-    out[row.fips] = { status: row.status || null, notes: row.notes || '' };
+    out[row.fips] = { status: row.status || null, notes: row.notes || '', locked: !!row.locked };
   }
   res.json(out);
 });
@@ -45,18 +52,19 @@ app.get('/api/counties', (req, res) => {
 app.post('/api/county', (req, res) => {
   console.log('POST /api/county body:', JSON.stringify(req.body));
   try {
-    const { fips, status, notes } = req.body || {};
+    const { fips, status, notes, locked } = req.body || {};
     if (!fips || !/^\d{5}$/.test(fips)) {
       return res.status(400).json({ error: `invalid fips: ${fips}` });
     }
     db.prepare(`
-      INSERT INTO counties (fips, status, notes, updated_at)
-      VALUES (?, ?, ?, datetime('now'))
+      INSERT INTO counties (fips, status, notes, locked, updated_at)
+      VALUES (?, ?, ?, ?, datetime('now'))
       ON CONFLICT(fips) DO UPDATE SET
         status     = excluded.status,
         notes      = excluded.notes,
+        locked     = excluded.locked,
         updated_at = excluded.updated_at
-    `).run(fips, status || null, notes || null);
+    `).run(fips, status || null, notes || null, locked ? 1 : 0);
     console.log('Saved county:', fips, status);
     res.json({ ok: true });
   } catch (err) {
