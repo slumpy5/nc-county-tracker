@@ -432,7 +432,13 @@
       county:  '#6ee7b7',
       oneoff:  '#f97316',
       knock:   '#ef4444',
-      none:    '#94a3b8'
+      // Legacy statuses from the old taxonomy — kept so counties tagged
+      // before the launch-type rework still render instead of going blank.
+      easy:        '#22c55e',
+      simple:      '#eab308',
+      complicated: '#f97316',
+      hard:        '#ef4444',
+      none:    '#dde3ed'
     };
 
     const STATUS_LABELS = {
@@ -440,7 +446,11 @@
       partner: 'Bought-in partner launch',
       county:  'County Party Launch',
       oneoff:  'Staff-led one-off launch',
-      knock:   'Staff Knock'
+      knock:   'Staff Knock',
+      easy:        'Easy / Done (legacy)',
+      simple:      'Simple (legacy)',
+      complicated: 'Complicated but Achievable (legacy)',
+      hard:        'Hard (legacy)'
     };
 
     const COUNTIES = {
@@ -528,10 +538,12 @@
     // ── Counters ───────────────────────────────────────────
     function refreshCounters() {
       const cnt = { fcc: 0, partner: 0, county: 0, oneoff: 0, knock: 0 };
+      let assigned = 0;
       for (const v of Object.values(db)) {
-        if (v.status && cnt[v.status] !== undefined) cnt[v.status]++;
+        if (!v.status) continue;
+        assigned++;
+        if (cnt[v.status] !== undefined) cnt[v.status]++;
       }
-      const assigned = cnt.fcc + cnt.partner + cnt.county + cnt.oneoff + cnt.knock;
       document.getElementById('c-fcc').textContent     = cnt.fcc;
       document.getElementById('c-partner').textContent = cnt.partner;
       document.getElementById('c-county').textContent  = cnt.county;
