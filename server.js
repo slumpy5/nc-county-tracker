@@ -20,12 +20,19 @@ db.exec(`
     status     TEXT,
     notes      TEXT,
     locked     INTEGER DEFAULT 0,
+    mobilize   TEXT,
     updated_at TEXT DEFAULT (datetime('now'))
   )
 `);
 
 try {
   db.exec('ALTER TABLE counties ADD COLUMN locked INTEGER DEFAULT 0');
+} catch (err) {
+  // column already exists
+}
+
+try {
+  db.exec('ALTER TABLE counties ADD COLUMN mobilize TEXT');
 } catch (err) {
   // column already exists
 }
@@ -40,10 +47,10 @@ app.get('/api/health', (req, res) => {
 
 // Return all county assignments
 app.get('/api/counties', (req, res) => {
-  const rows = db.prepare('SELECT fips, status, notes, locked FROM counties').all();
+  const rows = db.prepare('SELECT fips, status, notes, locked, mobilize FROM counties').all();
   const out = {};
   for (const row of rows) {
-    out[row.fips] = { status: row.status || null, notes: row.notes || '', locked: !!row.locked };
+    out[row.fips] = { status: row.status || null, notes: row.notes || '', locked: !!row.locked, mobilize: row.mobilize || '' };
   }
   res.json(out);
 });
@@ -52,19 +59,20 @@ app.get('/api/counties', (req, res) => {
 app.post('/api/county', (req, res) => {
   console.log('POST /api/county body:', JSON.stringify(req.body));
   try {
-    const { fips, status, notes, locked } = req.body || {};
+    const { fips, status, notes, locked, mobilize } = req.body || {};
     if (!fips || !/^\d{5}$/.test(fips)) {
       return res.status(400).json({ error: `invalid fips: ${fips}` });
     }
     db.prepare(`
-      INSERT INTO counties (fips, status, notes, locked, updated_at)
-      VALUES (?, ?, ?, ?, datetime('now'))
+      INSERT INTO counties (fips, status, notes, locked, mobilize, updated_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
       ON CONFLICT(fips) DO UPDATE SET
         status     = excluded.status,
         notes      = excluded.notes,
         locked     = excluded.locked,
+        mobilize   = excluded.mobilize,
         updated_at = excluded.updated_at
-    `).run(fips, status || null, notes || null, locked ? 1 : 0);
+    `).run(fips, status || null, notes || null, locked ? 1 : 0, mobilize || null);
     console.log('Saved county:', fips, status);
     res.json({ ok: true });
   } catch (err) {
