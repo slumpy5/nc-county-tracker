@@ -29,15 +29,18 @@ const auth = new google.auth.GoogleAuth({
 
 const sheets = google.sheets({ version: 'v4', auth });
 
-// App status key <-> the exact text stored in column D ("Type of Launch")
+// App status key <-> the exact text in column D's dropdown (strict validation,
+// so writes must match a listed option exactly — including the trailing
+// space Sheets has on "Staff Knocks ").
 const STATUS_SHEET_TEXT = {
-  county_party:  'County Party',
-  volunteer_led: 'Volunteer-Led',
-  staff_doors:   'Staff Doors',
-  partner:       'Partner',
+  volunteer_led: 'Volunteer-Led Launch',
+  partner:       'Bought-in Partner Launcher',
+  county_party:  'County Party Launch',
+  staff_led:     'Staff-Led Launch',
+  staff_knocks:  'Staff Knocks ',
 };
 const SHEET_TEXT_TO_STATUS = Object.fromEntries(
-  Object.entries(STATUS_SHEET_TEXT).map(([status, text]) => [text, status])
+  Object.entries(STATUS_SHEET_TEXT).map(([status, text]) => [text.trim(), status])
 );
 
 const app = express();

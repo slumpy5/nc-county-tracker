@@ -286,11 +286,11 @@
       flex-shrink: 0;
     }
 
-    .s-opt[data-s="fcc"].sel     { background: #f0fdf4; border-color: #16a34a; color: #14532d; }
-    .s-opt[data-s="partner"].sel { background: #dcfce7; border-color: #4ade80; color: #166534; }
-    .s-opt[data-s="county"].sel  { background: #d1fae5; border-color: #6ee7b7; color: #065f46; }
-    .s-opt[data-s="oneoff"].sel  { background: #fff7ed; border-color: #ea580c; color: #c2410c; }
-    .s-opt[data-s="knock"].sel   { background: #fef2f2; border-color: #dc2626; color: #b91c1c; }
+    .s-opt[data-s="volunteer_led"].sel { background: #f0fdf4; border-color: #16a34a; color: #14532d; }
+    .s-opt[data-s="partner"].sel       { background: #dcfce7; border-color: #22c55e; color: #166534; }
+    .s-opt[data-s="county_party"].sel  { background: #f0fdf4; border-color: #86efac; color: #166534; }
+    .s-opt[data-s="staff_led"].sel     { background: #fff7ed; border-color: #f97316; color: #c2410c; }
+    .s-opt[data-s="staff_knocks"].sel  { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
 
     .lock-row {
       display: flex;
@@ -397,23 +397,28 @@
     <div class="counters">
       <div class="badge">
         <div class="badge-dot" style="background:#16a34a"></div>
-        <span class="badge-label">County Party</span>
-        <span class="badge-count" id="c-county_party">0</span>
-      </div>
-      <div class="badge">
-        <div class="badge-dot" style="background:#4ade80"></div>
-        <span class="badge-label">Volunteer-Led</span>
+        <span class="badge-label">Volunteer-Led Launch</span>
         <span class="badge-count" id="c-volunteer_led">0</span>
       </div>
       <div class="badge">
-        <div class="badge-dot" style="background:#ef4444"></div>
-        <span class="badge-label">Staff Doors</span>
-        <span class="badge-count" id="c-staff_doors">0</span>
+        <div class="badge-dot" style="background:#22c55e"></div>
+        <span class="badge-label">Bought-in Partner Launcher</span>
+        <span class="badge-count" id="c-partner">0</span>
       </div>
       <div class="badge">
-        <div class="badge-dot" style="background:#3b82f6"></div>
-        <span class="badge-label">Partner</span>
-        <span class="badge-count" id="c-partner">0</span>
+        <div class="badge-dot" style="background:#86efac"></div>
+        <span class="badge-label">County Party Launch</span>
+        <span class="badge-count" id="c-county_party">0</span>
+      </div>
+      <div class="badge">
+        <div class="badge-dot" style="background:#f97316"></div>
+        <span class="badge-label">Staff-Led Launch</span>
+        <span class="badge-count" id="c-staff_led">0</span>
+      </div>
+      <div class="badge">
+        <div class="badge-dot" style="background:#fca5a5"></div>
+        <span class="badge-label">Staff Knocks</span>
+        <span class="badge-count" id="c-staff_knocks">0</span>
       </div>
       <div class="badge">
         <div class="badge-dot" style="background:#94a3b8"></div>
@@ -442,17 +447,20 @@
         <div>
           <div class="sec-label">Status</div>
           <div class="status-list">
-            <div class="s-opt" data-s="county_party">
-              <div class="s-dot" style="background:#16a34a"></div>County Party
-            </div>
             <div class="s-opt" data-s="volunteer_led">
-              <div class="s-dot" style="background:#4ade80"></div>Volunteer-Led
-            </div>
-            <div class="s-opt" data-s="staff_doors">
-              <div class="s-dot" style="background:#ef4444"></div>Staff Doors
+              <div class="s-dot" style="background:#16a34a"></div>Volunteer-Led Launch
             </div>
             <div class="s-opt" data-s="partner">
-              <div class="s-dot" style="background:#3b82f6"></div>Partner
+              <div class="s-dot" style="background:#22c55e"></div>Bought-in Partner Launcher
+            </div>
+            <div class="s-opt" data-s="county_party">
+              <div class="s-dot" style="background:#86efac"></div>County Party Launch
+            </div>
+            <div class="s-opt" data-s="staff_led">
+              <div class="s-dot" style="background:#f97316"></div>Staff-Led Launch
+            </div>
+            <div class="s-opt" data-s="staff_knocks">
+              <div class="s-dot" style="background:#fca5a5"></div>Staff Knocks
             </div>
           </div>
         </div>
@@ -487,18 +495,20 @@
     'use strict';
 
     const COLORS = {
-      county_party:  '#16a34a',
-      volunteer_led: '#4ade80',
-      staff_doors:   '#ef4444',
-      partner:       '#3b82f6',
+      volunteer_led: '#16a34a',
+      partner:       '#22c55e',
+      county_party:  '#86efac',
+      staff_led:     '#f97316',
+      staff_knocks:  '#fca5a5',
       none:          '#dde3ed'
     };
 
     const STATUS_LABELS = {
-      county_party:  'County Party',
-      volunteer_led: 'Volunteer-Led',
-      staff_doors:   'Staff Doors',
-      partner:       'Partner'
+      volunteer_led: 'Volunteer-Led Launch',
+      partner:       'Bought-in Partner Launcher',
+      county_party:  'County Party Launch',
+      staff_led:     'Staff-Led Launch',
+      staff_knocks:  'Staff Knocks'
     };
 
     const COUNTIES = {
@@ -602,17 +612,18 @@
 
     // ── Counters ───────────────────────────────────────────
     function refreshCounters() {
-      const cnt = { county_party: 0, volunteer_led: 0, staff_doors: 0, partner: 0 };
+      const cnt = { volunteer_led: 0, partner: 0, county_party: 0, staff_led: 0, staff_knocks: 0 };
       let assigned = 0;
       for (const v of Object.values(db)) {
         if (!v.status) continue;
         assigned++;
         if (cnt[v.status] !== undefined) cnt[v.status]++;
       }
-      document.getElementById('c-county_party').textContent  = cnt.county_party;
       document.getElementById('c-volunteer_led').textContent = cnt.volunteer_led;
-      document.getElementById('c-staff_doors').textContent   = cnt.staff_doors;
       document.getElementById('c-partner').textContent       = cnt.partner;
+      document.getElementById('c-county_party').textContent  = cnt.county_party;
+      document.getElementById('c-staff_led').textContent     = cnt.staff_led;
+      document.getElementById('c-staff_knocks').textContent  = cnt.staff_knocks;
       document.getElementById('c-none').textContent          = Object.keys(COUNTIES).length - assigned;
     }
 
