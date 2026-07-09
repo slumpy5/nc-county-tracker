@@ -160,29 +160,6 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 
-    #toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%) translateY(60px);
-      padding: 8px 18px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      color: white;
-      z-index: 300;
-      pointer-events: none;
-      transition: transform 0.25s ease, opacity 0.25s ease;
-      opacity: 0;
-      white-space: nowrap;
-    }
-    #toast.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
-    #toast.success { background: #16a34a; }
-    #toast.error   { background: #dc2626; }
-
     #status-msg {
       position: absolute;
       inset: 0;
@@ -255,29 +232,25 @@
       margin-bottom: 8px;
     }
 
-    .status-list {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .s-opt {
+    .info-row {
       display: flex;
       align-items: center;
       gap: 10px;
       padding: 10px 12px;
       border-radius: 8px;
-      border: 2px solid transparent;
-      cursor: pointer;
+      background: #f8fafc;
       font-size: 13.5px;
       font-weight: 500;
-      background: #f8fafc;
       color: #475569;
-      transition: background 0.08s, border-color 0.08s;
-      user-select: none;
     }
 
-    .s-opt:hover { background: #f1f5f9; }
+    .info-row a {
+      color: #2563eb;
+      font-weight: 600;
+      text-decoration: none;
+      word-break: break-all;
+    }
+    .info-row a:hover { text-decoration: underline; }
 
     .s-dot {
       width: 11px;
@@ -285,108 +258,6 @@
       border-radius: 50%;
       flex-shrink: 0;
     }
-
-    .s-opt[data-s="volunteer_led"].sel { background: #f0fdf4; border-color: #16a34a; color: #14532d; }
-    .s-opt[data-s="partner"].sel       { background: #dcfce7; border-color: #22c55e; color: #166534; }
-    .s-opt[data-s="county_party"].sel  { background: #f0fdf4; border-color: #86efac; color: #166534; }
-    .s-opt[data-s="staff_led"].sel     { background: #fff7ed; border-color: #f97316; color: #c2410c; }
-    .s-opt[data-s="staff_knocks"].sel  { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
-
-    .lock-row {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      background: #f8fafc;
-      font-size: 13.5px;
-      font-weight: 500;
-      color: #475569;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .lock-row input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-      accent-color: #0f172a;
-    }
-
-    .link-wrap { display: flex; flex-direction: column; }
-
-    .link-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    input#mobilize-link {
-      flex: 1;
-      min-width: 0;
-      padding: 10px 11px;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 8px;
-      font-size: 13px;
-      font-family: inherit;
-      color: #334155;
-      background: #fafafa;
-    }
-
-    input#mobilize-link:focus {
-      outline: none;
-      border-color: #94a3b8;
-      background: white;
-    }
-
-    .link-open {
-      width: 38px;
-      height: 38px;
-      min-width: 38px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      background: #f1f5f9;
-      color: #475569;
-      text-decoration: none;
-      font-size: 16px;
-      flex-shrink: 0;
-      transition: background 0.1s, opacity 0.1s;
-    }
-
-    .link-open:hover { background: #e2e8f0; }
-
-    .link-open.disabled {
-      pointer-events: none;
-      opacity: 0.35;
-    }
-
-    #save-btn {
-      width: 100%;
-      padding: 12px;
-      background: #0f172a;
-      color: white;
-      border: none;
-      border-radius: 9px;
-      font-size: 14.5px;
-      font-weight: 600;
-      cursor: pointer;
-      letter-spacing: -0.01em;
-      transition: background 0.1s;
-    }
-
-    #save-btn:hover { background: #1e293b; }
-
-    .clear-link {
-      text-align: center;
-      margin-top: 8px;
-      font-size: 12px;
-      color: #94a3b8;
-      cursor: pointer;
-      user-select: none;
-    }
-    .clear-link:hover { color: #64748b; text-decoration: underline; }
   </style>
 </head>
 
@@ -446,50 +317,23 @@
 
         <div>
           <div class="sec-label">Status</div>
-          <div class="status-list">
-            <div class="s-opt" data-s="volunteer_led">
-              <div class="s-dot" style="background:#16a34a"></div>Volunteer-Led Launch
-            </div>
-            <div class="s-opt" data-s="partner">
-              <div class="s-dot" style="background:#22c55e"></div>Bought-in Partner Launcher
-            </div>
-            <div class="s-opt" data-s="county_party">
-              <div class="s-dot" style="background:#86efac"></div>County Party Launch
-            </div>
-            <div class="s-opt" data-s="staff_led">
-              <div class="s-dot" style="background:#f97316"></div>Staff-Led Launch
-            </div>
-            <div class="s-opt" data-s="staff_knocks">
-              <div class="s-dot" style="background:#fca5a5"></div>Staff Knocks
-            </div>
-          </div>
+          <div class="info-row" id="panel-status"></div>
         </div>
 
         <div>
-          <label class="lock-row">
-            <input type="checkbox" id="locked-cb">
-            Launch Locked?
-          </label>
+          <div class="sec-label">Launch Locked?</div>
+          <div class="info-row" id="panel-locked"></div>
         </div>
 
-        <div class="link-wrap">
+        <div>
           <div class="sec-label">Mobilize</div>
-          <div class="link-row">
-            <input type="url" id="mobilize-link" placeholder="Paste Mobilize link…">
-            <a id="mobilize-open" class="link-open disabled" href="#" target="_blank" rel="noopener noreferrer" title="Open link">↗</a>
-          </div>
-        </div>
-
-        <div>
-          <button id="save-btn" onclick="save()">Save Changes</button>
-          <div class="clear-link" onclick="clearStatus()">Clear status</div>
+          <div class="info-row" id="panel-mobilize"></div>
         </div>
       </div>
     </div>
   </div>
 
   <div id="tip"></div>
-  <div id="toast"></div>
 
   <script>
     'use strict';
@@ -541,9 +385,6 @@
 
     // ── State ──────────────────────────────────────────────
     let db = {};          // { [fips]: { status, locked, mobilize } }
-    let selFips = null;
-    let selStatus = null;
-    let selLocked = false;
 
     // ── Persistence (server API) ───────────────────────────
     async function fetchDB() {
@@ -554,31 +395,6 @@
       } catch (err) {
         console.warn('Could not load county data:', err);
         db = {};
-      }
-    }
-
-    let toastTimer;
-    function showToast(msg, type) {
-      const el = document.getElementById('toast');
-      el.textContent = msg;
-      el.className = `show ${type}`;
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => { el.className = ''; }, 2500);
-    }
-
-    async function saveToAPI(fips, status, locked, mobilize) {
-      try {
-        const res = await fetch('/api/county', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fips, status, locked, mobilize })
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-        showToast('Saved ✓', 'success');
-      } catch (err) {
-        console.error('Save failed:', err);
-        showToast(`Error: ${err.message}`, 'error');
       }
     }
 
@@ -599,17 +415,6 @@
       return /^https?:\/\//i.test(url) ? url : `https://${url}`;
     }
 
-    function updateMobilizeOpenLink(url) {
-      const openBtn = document.getElementById('mobilize-open');
-      if (url) {
-        openBtn.href = url;
-        openBtn.classList.remove('disabled');
-      } else {
-        openBtn.href = '#';
-        openBtn.classList.add('disabled');
-      }
-    }
-
     // ── Counters ───────────────────────────────────────────
     function refreshCounters() {
       const cnt = { volunteer_led: 0, partner: 0, county_party: 0, staff_led: 0, staff_knocks: 0 };
@@ -627,66 +432,46 @@
       document.getElementById('c-none').textContent          = Object.keys(COUNTIES).length - assigned;
     }
 
-    // ── Panel ──────────────────────────────────────────────
+    // ── Panel (read-only) ──────────────────────────────────
     function openPanel(fips) {
-      selFips   = fips;
-      selStatus = db[fips]?.status ?? null;
-      selLocked = !!db[fips]?.locked;
-      const mobilize = db[fips]?.mobilize ?? '';
+      const rec = db[fips] || {};
       document.getElementById('panel-name').textContent = COUNTIES[fips] + ' County';
-      document.getElementById('locked-cb').checked = selLocked;
-      document.getElementById('mobilize-link').value = mobilize;
-      updateMobilizeOpenLink(mobilize);
-      renderStatusOpts();
+
+      const statusEl = document.getElementById('panel-status');
+      statusEl.textContent = '';
+      if (rec.status) {
+        const dot = document.createElement('div');
+        dot.className = 's-dot';
+        dot.style.background = COLORS[rec.status];
+        statusEl.appendChild(dot);
+        statusEl.appendChild(document.createTextNode(STATUS_LABELS[rec.status]));
+      } else {
+        statusEl.textContent = 'Unassigned';
+      }
+
+      document.getElementById('panel-locked').textContent = rec.locked ? 'Locked' : 'Not locked';
+
+      const mobilizeEl = document.getElementById('panel-mobilize');
+      mobilizeEl.textContent = '';
+      const rawLink = (rec.mobilize || '').trim();
+      if (rawLink) {
+        const a = document.createElement('a');
+        a.href = normalizeUrl(rawLink);
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = rawLink;
+        mobilizeEl.appendChild(a);
+      } else {
+        mobilizeEl.textContent = 'No link';
+      }
+
       document.getElementById('panel').classList.add('open');
     }
 
     function closePanel() {
       document.getElementById('panel').classList.remove('open');
       d3.selectAll('.county').classed('active', false);
-      selFips = selStatus = null;
-      selLocked = false;
     }
-
-    function renderStatusOpts() {
-      document.querySelectorAll('.s-opt').forEach(el => {
-        el.classList.toggle('sel', el.dataset.s === selStatus);
-      });
-    }
-
-    function clearStatus() {
-      selStatus = null;
-      renderStatusOpts();
-    }
-
-    async function save() {
-      if (!selFips) return;
-      const fips     = selFips;
-      const status   = selStatus;
-      const locked   = selLocked;
-      const mobilize = normalizeUrl(document.getElementById('mobilize-link').value);
-      db[fips] = { status, locked, mobilize };
-      refreshCounters();
-      d3.select(`.county[data-fips="${fips}"]`).attr('fill', fillOf(fips));
-      closePanel();
-      await saveToAPI(fips, status, locked, mobilize);
-    }
-
-    document.querySelectorAll('.s-opt').forEach(el => {
-      el.addEventListener('click', () => {
-        // Clicking the already-selected status deselects it
-        selStatus = (el.dataset.s === selStatus) ? null : el.dataset.s;
-        renderStatusOpts();
-      });
-    });
-
-    document.getElementById('locked-cb').addEventListener('change', (e) => {
-      selLocked = e.target.checked;
-    });
-
-    document.getElementById('mobilize-link').addEventListener('input', (e) => {
-      updateMobilizeOpenLink(normalizeUrl(e.target.value));
-    });
 
     // ── Map ────────────────────────────────────────────────
     async function init() {

@@ -22,16 +22,17 @@ const credentials = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
   ? JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
   : null;
 
+// Read-only: this app is a viewer, not an editor, so the service account
+// only ever needs read access to the sheet.
 const auth = new google.auth.GoogleAuth({
   credentials,
-  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 });
 
 const sheets = google.sheets({ version: 'v4', auth });
 
-// App status key <-> the exact text in column D's dropdown (strict validation,
-// so writes must match a listed option exactly — including the trailing
-// space Sheets has on "Staff Knocks ").
+// Column D's dropdown text -> the app's internal status key (trimmed since
+// the sheet's "Staff Knocks " option has a trailing space).
 const STATUS_SHEET_TEXT = {
   volunteer_led: 'Volunteer-Led Launch',
   partner:       'Bought-in Partner Launcher',
@@ -44,7 +45,6 @@ const SHEET_TEXT_TO_STATUS = Object.fromEntries(
 );
 
 const app = express();
-app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/health', (req, res) => {
@@ -80,49 +80,6 @@ app.get('/api/counties', async (req, res) => {
     res.json(out);
   } catch (err) {
     console.error('Sheets read error:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Save / update one county by finding its row and updating just D and M:N
-app.post('/api/county', async (req, res) => {
-  try {
-    const { fips, status, locked, mobilize } = req.body || {};
-    if (!fips || !FIPS_TO_NAME[fips]) {
-      return res.status(400).json({ error: `invalid fips: ${fips}` });
-    }
-    if (status && !STATUS_SHEET_TEXT[status]) {
-      return res.status(400).json({ error: `invalid status: ${status}` });
-    }
-
-    const countyName = FIPS_TO_NAME[fips];
-
-    const colC = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `'${SHEET_TAB}'!C2:C101`,
-    });
-    const names = (colC.data.values || []).map(r => (r[0] || '').trim());
-    const rowIndex = names.indexOf(countyName);
-    if (rowIndex === -1) {
-      return res.status(404).json({ error: `"${countyName}" not found in the sheet (check for typos in column C)` });
-    }
-    const row = rowIndex + 2;
-
-    await sheets.spreadsheets.values.batchUpdate({
-      spreadsheetId: SHEET_ID,
-      requestBody: {
-        valueInputOption: 'RAW',
-        data: [
-          { range: `'${SHEET_TAB}'!D${row}`, values: [[status ? STATUS_SHEET_TEXT[status] : '']] },
-          { range: `'${SHEET_TAB}'!M${row}:N${row}`, values: [[locked ? 'TRUE' : 'FALSE', mobilize || '']] },
-        ],
-      },
-    });
-
-    console.log('Saved county:', fips, countyName, status);
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Save error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
