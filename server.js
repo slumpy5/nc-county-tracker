@@ -51,26 +51,34 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, sheetId: SHEET_ID, tab: SHEET_TAB });
 });
 
-// Return all county assignments, read live from the sheet
+// Return all county assignments, read live from the sheet.
+// Uses spreadsheets.get (not values.get) so we can see each cell's real
+// hyperlink target, not just its displayed text — people link custom text
+// like "Here" over the actual Mobilize URL, which values.get can't see.
 app.get('/api/counties', async (req, res) => {
   try {
-    const result = await sheets.spreadsheets.values.get({
+    const result = await sheets.spreadsheets.get({
       spreadsheetId: SHEET_ID,
-      range: `'${SHEET_TAB}'!C2:N101`,
+      ranges: [`'${SHEET_TAB}'!C2:N101`],
+      fields: 'sheets(data(rowData(values(formattedValue,hyperlink))))',
     });
-    const rows = result.data.values || [];
+    const rowData = result.data.sheets?.[0]?.data?.[0]?.rowData || [];
     const out = {};
-    rows.forEach((row, i) => {
-      const name = (row[0] || '').trim();
+    rowData.forEach((rowObj, i) => {
+      const cells = rowObj.values || [];
+      const cellText = idx => (cells[idx]?.formattedValue || '').trim();
+
+      const name = cellText(0);
       if (!name) return;
       const fips = NAME_TO_FIPS[name];
       if (!fips) {
         console.warn(`Sheet row ${i + 2}: county name "${name}" doesn't match any known NC county — skipping.`);
         return;
       }
-      const statusText = (row[1] || '').trim();
-      const locked = (row[10] || '').trim().toUpperCase() === 'TRUE';
-      const mobilize = (row[11] || '').trim();
+      const statusText = cellText(1);
+      const locked = cellText(10).toUpperCase() === 'TRUE';
+      const mobilizeCell = cells[11];
+      const mobilize = (mobilizeCell?.hyperlink || mobilizeCell?.formattedValue || '').trim();
       out[fips] = {
         status: SHEET_TEXT_TO_STATUS[statusText] || null,
         locked,
