@@ -1,79 +1,122 @@
 'use strict';
 
+require('dotenv').config();
+
 const express = require('express');
-const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
+const { google } = require('googleapis');
+const FIPS_TO_NAME = require('./counties.js');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'counties.db');
+const NAME_TO_FIPS = Object.fromEntries(
+  Object.entries(FIPS_TO_NAME).map(([fips, name]) => [name, fips])
+);
 
-if (process.env.NODE_ENV === 'production' && !process.env.DB_PATH) {
-  console.warn('WARNING: DB_PATH not set — data will be lost on redeploy. Set DB_PATH to your Render Disk mount path (e.g. /data/counties.db).');
+const SHEET_ID = process.env.SHEET_ID;
+const SHEET_TAB = process.env.SHEET_TAB || '100 County Tracker';
+
+if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY || !SHEET_ID) {
+  console.warn('WARNING: GOOGLE_SERVICE_ACCOUNT_KEY and/or SHEET_ID not set — Sheets API calls will fail.');
 }
 
-console.log(`Using database at: ${DB_PATH}`);
+const credentials = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
+  ? JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
+  : null;
 
-const db = new DatabaseSync(DB_PATH);
-db.exec('PRAGMA journal_mode = WAL');
-db.exec(`
-  CREATE TABLE IF NOT EXISTS counties (
-    fips       TEXT PRIMARY KEY,
-    status     TEXT,
-    notes      TEXT,
-    locked     INTEGER DEFAULT 0,
-    mobilize   TEXT,
-    updated_at TEXT DEFAULT (datetime('now'))
-  )
-`);
+const auth = new google.auth.GoogleAuth({
+  credentials,
+  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+});
 
-try {
-  db.exec('ALTER TABLE counties ADD COLUMN locked INTEGER DEFAULT 0');
-} catch (err) {
-  // column already exists
-}
+const sheets = google.sheets({ version: 'v4', auth });
 
-try {
-  db.exec('ALTER TABLE counties ADD COLUMN mobilize TEXT');
-} catch (err) {
-  // column already exists
-}
+// App status key <-> the exact text stored in column D ("Type of Launch")
+const STATUS_SHEET_TEXT = {
+  county_party:  'County Party',
+  volunteer_led: 'Volunteer-Led',
+  staff_doors:   'Staff Doors',
+  partner:       'Partner',
+};
+const SHEET_TEXT_TO_STATUS = Object.fromEntries(
+  Object.entries(STATUS_SHEET_TEXT).map(([status, text]) => [text, status])
+);
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, db: DB_PATH });
+  res.json({ ok: true, sheetId: SHEET_ID, tab: SHEET_TAB });
 });
 
-// Return all county assignments
-app.get('/api/counties', (req, res) => {
-  const rows = db.prepare('SELECT fips, status, notes, locked, mobilize FROM counties').all();
-  const out = {};
-  for (const row of rows) {
-    out[row.fips] = { status: row.status || null, notes: row.notes || '', locked: !!row.locked, mobilize: row.mobilize || '' };
-  }
-  res.json(out);
-});
-
-// Save / update one county
-app.post('/api/county', (req, res) => {
-  console.log('POST /api/county body:', JSON.stringify(req.body));
+// Return all county assignments, read live from the sheet
+app.get('/api/counties', async (req, res) => {
   try {
-    const { fips, status, notes, locked, mobilize } = req.body || {};
-    if (!fips || !/^\d{5}$/.test(fips)) {
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `'${SHEET_TAB}'!C2:N101`,
+    });
+    const rows = result.data.values || [];
+    const out = {};
+    rows.forEach((row, i) => {
+      const name = (row[0] || '').trim();
+      if (!name) return;
+      const fips = NAME_TO_FIPS[name];
+      if (!fips) {
+        console.warn(`Sheet row ${i + 2}: county name "${name}" doesn't match any known NC county — skipping.`);
+        return;
+      }
+      const statusText = (row[1] || '').trim();
+      const locked = (row[10] || '').trim().toUpperCase() === 'TRUE';
+      const mobilize = (row[11] || '').trim();
+      out[fips] = {
+        status: SHEET_TEXT_TO_STATUS[statusText] || null,
+        locked,
+        mobilize,
+      };
+    });
+    res.json(out);
+  } catch (err) {
+    console.error('Sheets read error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Save / update one county by finding its row and updating just D and M:N
+app.post('/api/county', async (req, res) => {
+  try {
+    const { fips, status, locked, mobilize } = req.body || {};
+    if (!fips || !FIPS_TO_NAME[fips]) {
       return res.status(400).json({ error: `invalid fips: ${fips}` });
     }
-    db.prepare(`
-      INSERT INTO counties (fips, status, notes, locked, mobilize, updated_at)
-      VALUES (?, ?, ?, ?, ?, datetime('now'))
-      ON CONFLICT(fips) DO UPDATE SET
-        status     = excluded.status,
-        notes      = excluded.notes,
-        locked     = excluded.locked,
-        mobilize   = excluded.mobilize,
-        updated_at = excluded.updated_at
-    `).run(fips, status || null, notes || null, locked ? 1 : 0, mobilize || null);
-    console.log('Saved county:', fips, status);
+    if (status && !STATUS_SHEET_TEXT[status]) {
+      return res.status(400).json({ error: `invalid status: ${status}` });
+    }
+
+    const countyName = FIPS_TO_NAME[fips];
+
+    const colC = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `'${SHEET_TAB}'!C2:C101`,
+    });
+    const names = (colC.data.values || []).map(r => (r[0] || '').trim());
+    const rowIndex = names.indexOf(countyName);
+    if (rowIndex === -1) {
+      return res.status(404).json({ error: `"${countyName}" not found in the sheet (check for typos in column C)` });
+    }
+    const row = rowIndex + 2;
+
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      requestBody: {
+        valueInputOption: 'RAW',
+        data: [
+          { range: `'${SHEET_TAB}'!D${row}`, values: [[status ? STATUS_SHEET_TEXT[status] : '']] },
+          { range: `'${SHEET_TAB}'!M${row}:N${row}`, values: [[locked ? 'TRUE' : 'FALSE', mobilize || '']] },
+        ],
+      },
+    });
+
+    console.log('Saved county:', fips, countyName, status);
     res.json({ ok: true });
   } catch (err) {
     console.error('Save error:', err.message);

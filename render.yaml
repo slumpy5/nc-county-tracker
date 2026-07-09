@@ -7,7 +7,11 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Set this in the Render dashboard to your Disk mount path + filename
-      # e.g. /data/counties.db  (after attaching a Disk to this service)
-      - key: DB_PATH
+      # Set these in the Render dashboard — source of truth is the Google Sheet,
+      # not a local DB, so no Disk is needed for this service anymore.
+      - key: GOOGLE_SERVICE_ACCOUNT_KEY
+        sync: false
+      - key: SHEET_ID
+        sync: false
+      - key: SHEET_TAB
         sync: false

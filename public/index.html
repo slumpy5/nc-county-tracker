@@ -362,27 +362,6 @@
       opacity: 0.35;
     }
 
-    .notes-wrap { display: flex; flex-direction: column; }
-
-    textarea#notes {
-      resize: vertical;
-      min-height: 110px;
-      padding: 10px 11px;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 8px;
-      font-size: 13px;
-      font-family: inherit;
-      color: #334155;
-      line-height: 1.55;
-      background: #fafafa;
-    }
-
-    textarea#notes:focus {
-      outline: none;
-      border-color: #94a3b8;
-      background: white;
-    }
-
     #save-btn {
       width: 100%;
       padding: 12px;
@@ -418,28 +397,23 @@
     <div class="counters">
       <div class="badge">
         <div class="badge-dot" style="background:#16a34a"></div>
-        <span class="badge-label">FCC Vol Led</span>
-        <span class="badge-count" id="c-fcc">0</span>
+        <span class="badge-label">County Party</span>
+        <span class="badge-count" id="c-county_party">0</span>
       </div>
       <div class="badge">
         <div class="badge-dot" style="background:#4ade80"></div>
-        <span class="badge-label">Partner Launch</span>
-        <span class="badge-count" id="c-partner">0</span>
-      </div>
-      <div class="badge">
-        <div class="badge-dot" style="background:#6ee7b7"></div>
-        <span class="badge-label">County Party</span>
-        <span class="badge-count" id="c-county">0</span>
-      </div>
-      <div class="badge">
-        <div class="badge-dot" style="background:#f97316"></div>
-        <span class="badge-label">Staff One-off</span>
-        <span class="badge-count" id="c-oneoff">0</span>
+        <span class="badge-label">Volunteer-Led</span>
+        <span class="badge-count" id="c-volunteer_led">0</span>
       </div>
       <div class="badge">
         <div class="badge-dot" style="background:#ef4444"></div>
-        <span class="badge-label">Staff Knock</span>
-        <span class="badge-count" id="c-knock">0</span>
+        <span class="badge-label">Staff Doors</span>
+        <span class="badge-count" id="c-staff_doors">0</span>
+      </div>
+      <div class="badge">
+        <div class="badge-dot" style="background:#3b82f6"></div>
+        <span class="badge-label">Partner</span>
+        <span class="badge-count" id="c-partner">0</span>
       </div>
       <div class="badge">
         <div class="badge-dot" style="background:#94a3b8"></div>
@@ -468,20 +442,17 @@
         <div>
           <div class="sec-label">Status</div>
           <div class="status-list">
-            <div class="s-opt" data-s="fcc">
-              <div class="s-dot" style="background:#16a34a"></div>FCC Vol Led
+            <div class="s-opt" data-s="county_party">
+              <div class="s-dot" style="background:#16a34a"></div>County Party
+            </div>
+            <div class="s-opt" data-s="volunteer_led">
+              <div class="s-dot" style="background:#4ade80"></div>Volunteer-Led
+            </div>
+            <div class="s-opt" data-s="staff_doors">
+              <div class="s-dot" style="background:#ef4444"></div>Staff Doors
             </div>
             <div class="s-opt" data-s="partner">
-              <div class="s-dot" style="background:#4ade80"></div>Bought-in partner launch
-            </div>
-            <div class="s-opt" data-s="county">
-              <div class="s-dot" style="background:#6ee7b7"></div>County Party Launch
-            </div>
-            <div class="s-opt" data-s="oneoff">
-              <div class="s-dot" style="background:#f97316"></div>Staff-led one-off launch
-            </div>
-            <div class="s-opt" data-s="knock">
-              <div class="s-dot" style="background:#ef4444"></div>Staff Knock
+              <div class="s-dot" style="background:#3b82f6"></div>Partner
             </div>
           </div>
         </div>
@@ -501,11 +472,6 @@
           </div>
         </div>
 
-        <div class="notes-wrap">
-          <div class="sec-label">Notes</div>
-          <textarea id="notes" placeholder="Add notes about this county…"></textarea>
-        </div>
-
         <div>
           <button id="save-btn" onclick="save()">Save Changes</button>
           <div class="clear-link" onclick="clearStatus()">Clear status</div>
@@ -521,30 +487,18 @@
     'use strict';
 
     const COLORS = {
-      fcc:     '#16a34a',
-      partner: '#4ade80',
-      county:  '#6ee7b7',
-      oneoff:  '#f97316',
-      knock:   '#ef4444',
-      // Legacy statuses from the old taxonomy — kept so counties tagged
-      // before the launch-type rework still render instead of going blank.
-      easy:        '#22c55e',
-      simple:      '#eab308',
-      complicated: '#f97316',
-      hard:        '#ef4444',
-      none:    '#dde3ed'
+      county_party:  '#16a34a',
+      volunteer_led: '#4ade80',
+      staff_doors:   '#ef4444',
+      partner:       '#3b82f6',
+      none:          '#dde3ed'
     };
 
     const STATUS_LABELS = {
-      fcc:     'FCC Vol Led',
-      partner: 'Bought-in partner launch',
-      county:  'County Party Launch',
-      oneoff:  'Staff-led one-off launch',
-      knock:   'Staff Knock',
-      easy:        'Easy / Done (legacy)',
-      simple:      'Simple (legacy)',
-      complicated: 'Complicated but Achievable (legacy)',
-      hard:        'Hard (legacy)'
+      county_party:  'County Party',
+      volunteer_led: 'Volunteer-Led',
+      staff_doors:   'Staff Doors',
+      partner:       'Partner'
     };
 
     const COUNTIES = {
@@ -576,7 +530,7 @@
     };
 
     // ── State ──────────────────────────────────────────────
-    let db = {};          // { [fips]: { status, notes, locked, mobilize } }
+    let db = {};          // { [fips]: { status, locked, mobilize } }
     let selFips = null;
     let selStatus = null;
     let selLocked = false;
@@ -602,12 +556,12 @@
       toastTimer = setTimeout(() => { el.className = ''; }, 2500);
     }
 
-    async function saveToAPI(fips, status, notes, locked, mobilize) {
+    async function saveToAPI(fips, status, locked, mobilize) {
       try {
         const res = await fetch('/api/county', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fips, status, notes, locked, mobilize })
+          body: JSON.stringify({ fips, status, locked, mobilize })
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
@@ -648,19 +602,18 @@
 
     // ── Counters ───────────────────────────────────────────
     function refreshCounters() {
-      const cnt = { fcc: 0, partner: 0, county: 0, oneoff: 0, knock: 0 };
+      const cnt = { county_party: 0, volunteer_led: 0, staff_doors: 0, partner: 0 };
       let assigned = 0;
       for (const v of Object.values(db)) {
         if (!v.status) continue;
         assigned++;
         if (cnt[v.status] !== undefined) cnt[v.status]++;
       }
-      document.getElementById('c-fcc').textContent     = cnt.fcc;
-      document.getElementById('c-partner').textContent = cnt.partner;
-      document.getElementById('c-county').textContent  = cnt.county;
-      document.getElementById('c-oneoff').textContent  = cnt.oneoff;
-      document.getElementById('c-knock').textContent   = cnt.knock;
-      document.getElementById('c-none').textContent    = Object.keys(COUNTIES).length - assigned;
+      document.getElementById('c-county_party').textContent  = cnt.county_party;
+      document.getElementById('c-volunteer_led').textContent = cnt.volunteer_led;
+      document.getElementById('c-staff_doors').textContent   = cnt.staff_doors;
+      document.getElementById('c-partner').textContent       = cnt.partner;
+      document.getElementById('c-none').textContent          = Object.keys(COUNTIES).length - assigned;
     }
 
     // ── Panel ──────────────────────────────────────────────
@@ -670,7 +623,6 @@
       selLocked = !!db[fips]?.locked;
       const mobilize = db[fips]?.mobilize ?? '';
       document.getElementById('panel-name').textContent = COUNTIES[fips] + ' County';
-      document.getElementById('notes').value = db[fips]?.notes ?? '';
       document.getElementById('locked-cb').checked = selLocked;
       document.getElementById('mobilize-link').value = mobilize;
       updateMobilizeOpenLink(mobilize);
@@ -700,14 +652,13 @@
       if (!selFips) return;
       const fips     = selFips;
       const status   = selStatus;
-      const notes    = document.getElementById('notes').value.trim();
       const locked   = selLocked;
       const mobilize = normalizeUrl(document.getElementById('mobilize-link').value);
-      db[fips] = { status, notes, locked, mobilize };
+      db[fips] = { status, locked, mobilize };
       refreshCounters();
       d3.select(`.county[data-fips="${fips}"]`).attr('fill', fillOf(fips));
       closePanel();
-      await saveToAPI(fips, status, notes, locked, mobilize);
+      await saveToAPI(fips, status, locked, mobilize);
     }
 
     document.querySelectorAll('.s-opt').forEach(el => {
