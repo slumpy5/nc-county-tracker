@@ -1,0 +1,602 @@
+{
+    "37001": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37003": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37005": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37007": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37009": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37011": {
+        "status": "county",
+        "notes": "https://mobilize.us/s/G4yaSK",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37013": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37015": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37017": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37019": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37021": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37023": {
+        "status": "knock",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37025": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37027": {
+        "status": "county",
+        "notes": "Kim Naff!",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37029": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37031": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37033": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37035": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37037": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37039": {
+        "status": "county",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37041": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37043": {
+        "status": "county",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37045": {
+        "status": "county",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37047": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37049": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37051": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37053": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37055": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37057": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37059": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37061": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37063": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37065": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37067": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37069": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37071": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37073": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37075": {
+        "status": "knock",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37077": {
+        "status": "partner",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37079": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37081": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37083": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37085": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37087": {
+        "status": "county",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37089": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37091": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37093": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37095": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37097": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37099": {
+        "status": "county",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37101": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37103": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37105": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37107": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37109": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37111": {
+        "status": "county",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37113": {
+        "status": "county",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37115": {
+        "status": "county",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37117": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37119": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37121": {
+        "status": "knock",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37123": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37125": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37127": {
+        "status": "partner",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37129": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37131": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37133": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37135": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37137": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37139": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37141": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37143": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37145": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37147": {
+        "status": "county",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37149": {
+        "status": "county",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37151": {
+        "status": "county",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37153": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37155": {
+        "status": null,
+        "notes": "Staff in this county as of 7/1",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37157": {
+        "status": "county",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37159": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37161": {
+        "status": "county",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37163": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37165": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37167": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37169": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37171": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37173": {
+        "status": "county",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37175": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37177": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37179": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37181": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37183": {
+        "status": "fcc",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37185": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37187": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37189": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37191": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37193": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37195": {
+        "status": "partner",
+        "notes": "",
+        "locked": true,
+        "mobilize": ""
+    },
+    "37197": {
+        "status": null,
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    },
+    "37199": {
+        "status": "county",
+        "notes": "",
+        "locked": false,
+        "mobilize": ""
+    }
+}
