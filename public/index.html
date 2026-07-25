@@ -99,21 +99,21 @@
     .county:hover { stroke: #1e293b; stroke-width: 1.8; }
     .county.active { stroke: #0f172a; stroke-width: 2.5; }
 
-    /* Completed counties: flat gold fill, with the shine living entirely in
-       a soft halo that bleeds outward from the county's actual border —
-       two stacked drop-shadows (tight + wide) for a natural glow falloff,
-       since CSS drop-shadow follows the shape's real silhouette rather than
-       its bounding box (unlike box-shadow, which would just glow a rectangle). */
+    /* Completed counties: crinkled gold-foil texture fill (see
+       createGoldFoilDataURL), with a warm halo that bleeds outward from the
+       county's actual border — two stacked drop-shadows (tight + wide) for a
+       natural glow falloff, since CSS drop-shadow follows the shape's real
+       silhouette rather than its bounding box like box-shadow would. */
     .county.completed {
-      filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.45)) drop-shadow(0 0 5px rgba(212, 175, 55, 0.3));
-      animation: gold-edge-glow 3.6s ease-in-out infinite;
+      filter: drop-shadow(0 0 3px rgba(255, 214, 110, 0.55)) drop-shadow(0 0 8px rgba(255, 196, 60, 0.4));
+      animation: gold-edge-glow 3.4s ease-in-out infinite;
     }
     @keyframes gold-edge-glow {
       0%, 100% {
-        filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.45)) drop-shadow(0 0 5px rgba(212, 175, 55, 0.3));
+        filter: drop-shadow(0 0 3px rgba(255, 214, 110, 0.55)) drop-shadow(0 0 8px rgba(255, 196, 60, 0.4));
       }
       50% {
-        filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.85)) drop-shadow(0 0 13px rgba(212, 175, 55, 0.55));
+        filter: drop-shadow(0 0 9px rgba(255, 224, 140, 0.95)) drop-shadow(0 0 20px rgba(255, 196, 60, 0.65));
       }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -437,11 +437,96 @@
       const rec = db[fips];
       // Completed overrides everything else — it's a terminal state, so it
       // wins over both the status color and the locked/unlocked hatch look.
-      // Flat fill on purpose: the shine lives in the animated edge glow
-      // (see .county.completed), not in the fill itself.
-      if (rec?.completed) return GOLD;
+      if (rec?.completed) return 'url(#gold-foil)';
       if (!rec?.status) return COLORS.none;
       return rec.locked ? COLORS[rec.status] : `url(#hatch-${rec.status})`;
+    }
+
+    // Generates a crinkled gold-foil texture on an offscreen canvas: a
+    // mottled base (soft overlapping light/dark blobs), fine curved crease
+    // strokes along a couple of dominant "grain" directions, and a few broad
+    // soft specular highlights — then returns it as a data URL for use as an
+    // SVG pattern image. Random, so every page load gets a slightly different
+    // sheet of foil; that's fine, it's a material, not a specific graphic.
+    function createGoldFoilDataURL() {
+      const size = 500;
+      const c = document.createElement('canvas');
+      c.width = size;
+      c.height = size;
+      const ctx = c.getContext('2d');
+
+      ctx.fillStyle = '#e3bd3e';
+      ctx.fillRect(0, 0, size, size);
+
+      // Mottled base: overlapping soft radial blobs, weighted toward bright/lit
+      // over dark/shadowed so the overall sheet reads as shiny gold rather than
+      // tarnished brass — one dark blob keeps some depth, the rest lift it.
+      const blobs = [
+        ['#8a6b1a', 0.32], ['#c9a227', 0.35],
+        ['#e8c96a', 0.55], ['#f3dd8a', 0.55], ['#ffe8a0', 0.55], ['#fff3c4', 0.5],
+      ];
+      blobs.forEach(([color, alpha]) => {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = 90 + Math.random() * 160;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, color);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.globalAlpha = alpha;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+
+      // Fine crinkle streaks along two dominant grain directions, blended
+      // with 'overlay' so they read as creases in the metal, not lines on it.
+      // Thicker + higher-contrast than a first pass, so the grain survives
+      // being stretched over small counties without washing out.
+      ctx.globalCompositeOperation = 'overlay';
+      const grainAngles = [0.35, 1.9];
+      for (let i = 0; i < 340; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const angle = grainAngles[i % 2] + (Math.random() - 0.5) * 0.9;
+        const len = 15 + Math.random() * 60;
+        const dx = Math.cos(angle) * len;
+        const dy = Math.sin(angle) * len;
+        const light = Math.random() < 0.65;
+        ctx.strokeStyle = light
+          ? `rgba(255,252,235,${(0.25 + Math.random() * 0.4).toFixed(2)})`
+          : `rgba(110,80,20,${(0.15 + Math.random() * 0.3).toFixed(2)})`;
+        ctx.lineWidth = 1 + Math.random() * 2;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(
+          x + dx / 2 + (Math.random() - 0.5) * 12,
+          y + dy / 2 + (Math.random() - 0.5) * 12,
+          x + dx, y + dy
+        );
+        ctx.stroke();
+      }
+
+      // A few broad soft specular highlights, screened on top for that
+      // "catching the light" foil sheen.
+      ctx.globalCompositeOperation = 'screen';
+      for (let i = 0; i < 4; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = 70 + Math.random() * 130;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, 'rgba(255,251,238,0.65)');
+        g.addColorStop(1, 'rgba(255,251,238,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+
+      return c.toDataURL('image/png');
     }
 
     function fipsOf(d) {
@@ -558,6 +643,22 @@
           .style('height', '100%');
 
         const defs = svg.append('defs');
+
+        // Gold foil pattern for completed counties — stretched to exactly
+        // fill each county's own bounding box (objectBoundingBox units) so
+        // it works for tiny counties and huge ones alike with no visible
+        // tiling seams, since the texture is abstract noise, not a repeating
+        // motif that would look broken if stretched non-uniformly.
+        const goldPattern = defs.append('pattern')
+          .attr('id', 'gold-foil')
+          .attr('patternContentUnits', 'objectBoundingBox')
+          .attr('width', 1)
+          .attr('height', 1);
+        goldPattern.append('image')
+          .attr('href', createGoldFoilDataURL())
+          .attr('x', 0).attr('y', 0)
+          .attr('width', 1).attr('height', 1)
+          .attr('preserveAspectRatio', 'none');
 
         Object.entries(COLORS).forEach(([key, color]) => {
           const pattern = defs.append('pattern')
