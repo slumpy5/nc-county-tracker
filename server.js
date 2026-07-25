@@ -59,7 +59,7 @@ app.get('/api/counties', async (req, res) => {
   try {
     const result = await sheets.spreadsheets.get({
       spreadsheetId: SHEET_ID,
-      ranges: [`'${SHEET_TAB}'!C2:N101`],
+      ranges: [`'${SHEET_TAB}'!C2:P101`],
       fields: 'sheets(data(rowData(values(formattedValue,hyperlink))))',
     });
     const rowData = result.data.sheets?.[0]?.data?.[0]?.rowData || [];
@@ -79,10 +79,12 @@ app.get('/api/counties', async (req, res) => {
       const locked = cellText(10).toUpperCase() === 'TRUE';
       const mobilizeCell = cells[11];
       const mobilize = (mobilizeCell?.hyperlink || mobilizeCell?.formattedValue || '').trim();
+      const completed = cellText(13).toUpperCase() === 'TRUE'; // column P
       out[fips] = {
         status: SHEET_TEXT_TO_STATUS[statusText] || null,
         locked,
         mobilize,
+        completed,
       };
     });
     res.json(out);

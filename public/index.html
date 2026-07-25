@@ -296,6 +296,12 @@
         <span class="badge-label">Unassigned</span>
         <span class="badge-count" id="c-none">100</span>
       </div>
+      <div class="divider"></div>
+      <div class="badge">
+        <div class="badge-dot" style="background:linear-gradient(135deg, #7a5c14, #f6e2a0 45%, #b8860b)"></div>
+        <span class="badge-label">Completed</span>
+        <span class="badge-count" id="c-completed">0</span>
+      </div>
     </div>
   </header>
 
@@ -323,6 +329,11 @@
         <div>
           <div class="sec-label">Launch Locked?</div>
           <div class="info-row" id="panel-locked"></div>
+        </div>
+
+        <div>
+          <div class="sec-label">Completed</div>
+          <div class="info-row" id="panel-completed"></div>
         </div>
 
         <div>
@@ -384,7 +395,7 @@
     };
 
     // ── State ──────────────────────────────────────────────
-    let db = {};          // { [fips]: { status, locked, mobilize } }
+    let db = {};          // { [fips]: { status, locked, mobilize, completed } }
 
     // ── Persistence (server API) ───────────────────────────
     async function fetchDB() {
@@ -401,6 +412,9 @@
     // ── Helpers ────────────────────────────────────────────
     function fillOf(fips) {
       const rec = db[fips];
+      // Completed overrides everything else — it's a terminal state, so it
+      // wins over both the status color and the locked/unlocked hatch look.
+      if (rec?.completed) return 'url(#gold-metallic)';
       if (!rec?.status) return COLORS.none;
       return rec.locked ? COLORS[rec.status] : `url(#hatch-${rec.status})`;
     }
@@ -419,7 +433,9 @@
     function refreshCounters() {
       const cnt = { volunteer_led: 0, partner: 0, county_party: 0, staff_led: 0, staff_knocks: 0 };
       let assigned = 0;
+      let completed = 0;
       for (const v of Object.values(db)) {
+        if (v.completed) completed++;
         if (!v.status) continue;
         assigned++;
         if (cnt[v.status] !== undefined) cnt[v.status]++;
@@ -430,6 +446,7 @@
       document.getElementById('c-staff_led').textContent     = cnt.staff_led;
       document.getElementById('c-staff_knocks').textContent  = cnt.staff_knocks;
       document.getElementById('c-none').textContent          = Object.keys(COUNTIES).length - assigned;
+      document.getElementById('c-completed').textContent     = completed;
     }
 
     // ── Panel (read-only) ──────────────────────────────────
@@ -450,6 +467,18 @@
       }
 
       document.getElementById('panel-locked').textContent = rec.locked ? 'Locked' : 'Not locked';
+
+      const completedEl = document.getElementById('panel-completed');
+      completedEl.textContent = '';
+      if (rec.completed) {
+        const dot = document.createElement('div');
+        dot.className = 's-dot';
+        dot.style.background = 'linear-gradient(135deg, #7a5c14, #f6e2a0 45%, #b8860b)';
+        completedEl.appendChild(dot);
+        completedEl.appendChild(document.createTextNode('Completed'));
+      } else {
+        completedEl.textContent = 'Not completed';
+      }
 
       const mobilizeEl = document.getElementById('panel-mobilize');
       mobilizeEl.textContent = '';
@@ -504,6 +533,21 @@
           .style('height', '100%');
 
         const defs = svg.append('defs');
+
+        // Warm metallic gold for completed counties — a few gradient stops
+        // (dark gold, bright highlight, dark gold) read as "metallic" where a
+        // flat fill would just read as yellow.
+        const goldGradient = defs.append('linearGradient')
+          .attr('id', 'gold-metallic')
+          .attr('gradientUnits', 'objectBoundingBox')
+          .attr('x1', 0).attr('y1', 0)
+          .attr('x2', 1).attr('y2', 1);
+        goldGradient.append('stop').attr('offset', '0%').attr('stop-color', '#8a6d1e');
+        goldGradient.append('stop').attr('offset', '30%').attr('stop-color', '#e8c96a');
+        goldGradient.append('stop').attr('offset', '50%').attr('stop-color', '#fdf1c3');
+        goldGradient.append('stop').attr('offset', '70%').attr('stop-color', '#d4af37');
+        goldGradient.append('stop').attr('offset', '100%').attr('stop-color', '#7a5c14');
+
         Object.entries(COLORS).forEach(([key, color]) => {
           const pattern = defs.append('pattern')
             .attr('id', `hatch-${key}`)
@@ -534,8 +578,9 @@
           .on('mouseenter', function(event, d) {
             const fips = fipsOf(d);
             const name = COUNTIES[fips] || fips;
-            const s    = db[fips]?.status;
-            tip.textContent = name + ' County' + (s ? '  ·  ' + STATUS_LABELS[s] : '');
+            const rec  = db[fips];
+            const suffix = rec?.completed ? '  ·  Completed' : (rec?.status ? '  ·  ' + STATUS_LABELS[rec.status] : '');
+            tip.textContent = name + ' County' + suffix;
             tip.style.display = 'block';
           })
           .on('mousemove', function(event) {
