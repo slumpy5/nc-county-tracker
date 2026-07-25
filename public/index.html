@@ -99,6 +99,20 @@
     .county:hover { stroke: #1e293b; stroke-width: 1.8; }
     .county.active { stroke: #0f172a; stroke-width: 2.5; }
 
+    /* Completed counties: a slow, subtle gold glow — a brightness pulse on
+       the metallic gradient fill, since animating an SVG gradient's own
+       stops is far more expensive than animating a CSS filter. */
+    .county.completed {
+      animation: gold-pulse 3.6s ease-in-out infinite;
+    }
+    @keyframes gold-pulse {
+      0%, 100% { filter: brightness(1) saturate(1); }
+      50%      { filter: brightness(1.22) saturate(1.15); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .county.completed { animation: none; }
+    }
+
     #zoom-controls {
       position: absolute;
       bottom: 20px;
@@ -575,6 +589,7 @@
           .attr('data-fips', d => fipsOf(d))
           .attr('d', pathGen)
           .attr('fill', d => fillOf(fipsOf(d)))
+          .classed('completed', d => !!db[fipsOf(d)]?.completed)
           .on('mouseenter', function(event, d) {
             const fips = fipsOf(d);
             const name = COUNTIES[fips] || fips;
