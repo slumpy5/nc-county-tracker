@@ -99,15 +99,22 @@
     .county:hover { stroke: #1e293b; stroke-width: 1.8; }
     .county.active { stroke: #0f172a; stroke-width: 2.5; }
 
-    /* Completed counties: a slow, subtle gold glow — a brightness pulse on
-       the metallic gradient fill, since animating an SVG gradient's own
-       stops is far more expensive than animating a CSS filter. */
+    /* Completed counties: flat gold fill, with the shine living entirely in
+       a soft halo that bleeds outward from the county's actual border —
+       two stacked drop-shadows (tight + wide) for a natural glow falloff,
+       since CSS drop-shadow follows the shape's real silhouette rather than
+       its bounding box (unlike box-shadow, which would just glow a rectangle). */
     .county.completed {
-      animation: gold-pulse 3.6s ease-in-out infinite;
+      filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.45)) drop-shadow(0 0 5px rgba(212, 175, 55, 0.3));
+      animation: gold-edge-glow 3.6s ease-in-out infinite;
     }
-    @keyframes gold-pulse {
-      0%, 100% { filter: brightness(1) saturate(1); }
-      50%      { filter: brightness(1.22) saturate(1.15); }
+    @keyframes gold-edge-glow {
+      0%, 100% {
+        filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.45)) drop-shadow(0 0 5px rgba(212, 175, 55, 0.3));
+      }
+      50% {
+        filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.85)) drop-shadow(0 0 13px rgba(212, 175, 55, 0.55));
+      }
     }
     @media (prefers-reduced-motion: reduce) {
       .county.completed { animation: none; }
@@ -312,7 +319,7 @@
       </div>
       <div class="divider"></div>
       <div class="badge">
-        <div class="badge-dot" style="background:linear-gradient(135deg, #7a5c14, #f6e2a0 45%, #b8860b)"></div>
+        <div class="badge-dot" style="background:#d4af37"></div>
         <span class="badge-label">Completed</span>
         <span class="badge-count" id="c-completed">0</span>
       </div>
@@ -372,6 +379,8 @@
       none:          '#dde3ed'
     };
 
+    const GOLD = '#d4af37'; // flat metallic gold fill for completed counties
+
     const STATUS_LABELS = {
       volunteer_led: 'Volunteer-Led Launch',
       partner:       'Bought-in Partner Launcher',
@@ -428,7 +437,9 @@
       const rec = db[fips];
       // Completed overrides everything else — it's a terminal state, so it
       // wins over both the status color and the locked/unlocked hatch look.
-      if (rec?.completed) return 'url(#gold-metallic)';
+      // Flat fill on purpose: the shine lives in the animated edge glow
+      // (see .county.completed), not in the fill itself.
+      if (rec?.completed) return GOLD;
       if (!rec?.status) return COLORS.none;
       return rec.locked ? COLORS[rec.status] : `url(#hatch-${rec.status})`;
     }
@@ -487,7 +498,7 @@
       if (rec.completed) {
         const dot = document.createElement('div');
         dot.className = 's-dot';
-        dot.style.background = 'linear-gradient(135deg, #7a5c14, #f6e2a0 45%, #b8860b)';
+        dot.style.background = GOLD;
         completedEl.appendChild(dot);
         completedEl.appendChild(document.createTextNode('Completed'));
       } else {
@@ -547,20 +558,6 @@
           .style('height', '100%');
 
         const defs = svg.append('defs');
-
-        // Warm metallic gold for completed counties — a few gradient stops
-        // (dark gold, bright highlight, dark gold) read as "metallic" where a
-        // flat fill would just read as yellow.
-        const goldGradient = defs.append('linearGradient')
-          .attr('id', 'gold-metallic')
-          .attr('gradientUnits', 'objectBoundingBox')
-          .attr('x1', 0).attr('y1', 0)
-          .attr('x2', 1).attr('y2', 1);
-        goldGradient.append('stop').attr('offset', '0%').attr('stop-color', '#8a6d1e');
-        goldGradient.append('stop').attr('offset', '30%').attr('stop-color', '#e8c96a');
-        goldGradient.append('stop').attr('offset', '50%').attr('stop-color', '#fdf1c3');
-        goldGradient.append('stop').attr('offset', '70%').attr('stop-color', '#d4af37');
-        goldGradient.append('stop').attr('offset', '100%').attr('stop-color', '#7a5c14');
 
         Object.entries(COLORS).forEach(([key, color]) => {
           const pattern = defs.append('pattern')
