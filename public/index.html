@@ -171,6 +171,19 @@
       letter-spacing: 0.01em;
     }
 
+    /* On small screens, 100 always-on labels is unreadable clutter — hide
+       them by default and only reveal once zoomed in enough to read
+       individual counties (see the zoom handler's ZOOM_LABEL_THRESHOLD),
+       at a smaller base size than desktop since the zoom itself enlarges
+       them further. Desktop is untouched — this rule only exists below the
+       breakpoint. */
+    @media (max-width: 768px) {
+      .county-label {
+        font-size: 4px;
+        opacity: 0;
+      }
+    }
+
     #tip {
       position: fixed;
       background: rgba(15, 23, 42, 0.92);
@@ -632,11 +645,21 @@
           .attr('y', d => pathGen.centroid(d)[1])
           .text(d => COUNTIES[fipsOf(d)] || '');
 
+        // Labels stay hidden on mobile (see the @media rule on .county-label)
+        // until zoomed in past this factor, matching the CSS breakpoint so
+        // desktop behavior (always visible) is never touched.
+        const MOBILE_QUERY = window.matchMedia('(max-width: 768px)');
+        const ZOOM_LABEL_THRESHOLD = 2.2;
+
         const zoom = d3.zoom()
           .scaleExtent([1, 8])
           .translateExtent([[0, 0], [W, H]])
           .on('zoom', (event) => {
             zoomLayer.attr('transform', event.transform);
+            if (MOBILE_QUERY.matches) {
+              const visible = event.transform.k >= ZOOM_LABEL_THRESHOLD;
+              zoomLayer.selectAll('.county-label').style('opacity', visible ? 1 : 0);
+            }
           });
 
         svg.call(zoom);
