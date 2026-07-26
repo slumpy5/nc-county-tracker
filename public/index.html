@@ -100,63 +100,28 @@
     .county.active { stroke: #0f172a; stroke-width: 2.5; }
 
     /* Completed counties: filled with a real gold foil photo (gold-foil.png,
-       stretched into each county's shape via the #gold-foil pattern below).
-       The fill itself is static — no animated filter here — because
-       animating `filter` forces a re-rasterize of that element every frame,
-       which got very laggy while panning/zooming with several completed
-       counties on screen at once. The glow/pulse lives entirely in
-       .county-halo below instead, a separate, cheap layer. */
-
-    /* Glow behind each completed county: two flat-colored copies of the same
-       shape (tight+bright, wide+soft — a proper glow falloff instead of one
-       flat blob) each with a *static* blur (computed once, never animated).
-       Only opacity animates — no `transform` here, deliberately: an animated
-       CSS transform on an element that also has `filter`, sitting inside the
-       map's zoomed/scaled group, triggered real rendering glitches during
-       zoom (a known Chromium issue with filter-region recalculation under a
-       transformed ancestor). Opacity-only avoids that entirely while staying
-       just as cheap — compositor-only, no repaint. */
-    .county-halo-outer {
-      pointer-events: none;
-      fill: #ffaa00;
-      filter: blur(30px);
-      animation: halo-outer-pulse 3.4s ease-in-out infinite;
+       stretched into each county's shape via the #gold-foil pattern below),
+       plus a combined brightness/saturation pulse and soft outward glow —
+       verified against a local preview before this went in. */
+    .county.completed {
+      animation: gold-glow-pulse 3.6s ease-in-out infinite;
     }
-    .county-halo-inner {
-      pointer-events: none;
-      fill: #ffd23f;
-      filter: blur(10px);
-      animation: halo-inner-pulse 3.4s ease-in-out infinite;
+    @keyframes gold-glow-pulse {
+      0%, 100% {
+        filter:
+          brightness(1) saturate(1)
+          drop-shadow(0 0 3px rgba(255, 205, 60, 0.5))
+          drop-shadow(0 0 8px rgba(255, 190, 40, 0.35));
+      }
+      50% {
+        filter:
+          brightness(1.3) saturate(1.25)
+          drop-shadow(0 0 11px rgba(255, 218, 120, 0.95))
+          drop-shadow(0 0 24px rgba(255, 190, 40, 0.65));
+      }
     }
-    @keyframes halo-outer-pulse {
-      0%, 100% { opacity: 0.5; }
-      50%      { opacity: 1;   }
-    }
-    @keyframes halo-inner-pulse {
-      0%, 100% { opacity: 0.55; }
-      50%      { opacity: 1;    }
-    }
-
-    /* A pulsing shine directly on the gold itself — same shape, blended with
-       'overlay' (set once, not animated) so only its opacity fades in/out.
-       Kept modest so it adds sheen without bleaching the foil texture away
-       at the top of the pulse. */
-    .county-shine {
-      pointer-events: none;
-      fill: #fff6d2;
-      mix-blend-mode: overlay;
-      animation: shine-pulse 3.4s ease-in-out infinite;
-    }
-    @keyframes shine-pulse {
-      0%, 100% { opacity: 0.05; }
-      50%      { opacity: 0.32; }
-    }
-
     @media (prefers-reduced-motion: reduce) {
-      .county-halo-outer, .county-halo-inner, .county-shine { animation: none; }
-      .county-halo-outer { opacity: 0.6; }
-      .county-halo-inner { opacity: 0.7; }
-      .county-shine { opacity: 0.3; }
+      .county.completed { animation: none; }
     }
 
     #zoom-controls {
@@ -628,22 +593,6 @@
 
         const zoomLayer = svg.append('g').attr('class', 'zoom-layer');
 
-        // Glow layers for completed counties, added before the main county
-        // paths so they render behind. Only as many elements as there are
-        // completed counties — not all 100 — since these are the animated
-        // layers (see .county-halo-outer / .county-halo-inner).
-        const completedFeats = ncFeats.filter(d => !!db[fipsOf(d)]?.completed);
-        zoomLayer.selectAll('.county-halo-outer')
-          .data(completedFeats)
-          .join('path')
-          .attr('class', 'county-halo-outer')
-          .attr('d', pathGen);
-        zoomLayer.selectAll('.county-halo-inner')
-          .data(completedFeats)
-          .join('path')
-          .attr('class', 'county-halo-inner')
-          .attr('d', pathGen);
-
         zoomLayer.selectAll('.county')
           .data(ncFeats)
           .join('path')
@@ -674,14 +623,6 @@
             d3.select(this).classed('active', true);
             openPanel(fips);
           });
-
-        // Shine overlay on top of the fill itself, so the gold looks like
-        // it's brightening in place, not just glowing behind.
-        zoomLayer.selectAll('.county-shine')
-          .data(completedFeats)
-          .join('path')
-          .attr('class', 'county-shine')
-          .attr('d', pathGen);
 
         zoomLayer.selectAll('.county-label')
           .data(ncFeats)
