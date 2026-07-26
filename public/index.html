@@ -23,11 +23,32 @@
       color: white;
       padding: 13px 22px;
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .header-row {
+      display: flex;
       align-items: center;
       gap: 16px;
-      flex-shrink: 0;
       flex-wrap: wrap;
+      width: 100%;
     }
+
+    #reveal-btn {
+      background: #0c82e6;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #reveal-btn:hover { background: #0a6fc4; }
 
     h1 {
       font-size: 16px;
@@ -302,6 +323,7 @@
 
 <body>
   <header>
+    <div class="header-row">
     <h1>NC County Tracker</h1>
     <div class="divider"></div>
     <div class="counters">
@@ -342,6 +364,8 @@
         <span class="badge-count" id="c-completed">0</span>
       </div>
     </div>
+    </div>
+    <button id="reveal-btn" onclick="window.open('reveal.html', '_blank')">Play Completion Reveal</button>
   </header>
 
   <div class="main">
