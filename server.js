@@ -13,6 +13,10 @@ const NAME_TO_FIPS = Object.fromEntries(
 
 const SHEET_ID = process.env.SHEET_ID;
 const SHEET_TAB = process.env.SHEET_TAB || '100 County Tracker';
+// A separate tab, maintained by hand: one county name per row (column A, no
+// header), in the order they were finished. Purely presentational — not
+// related to column P's "Completed" checkbox on the main tab.
+const ORDER_TAB = process.env.COMPLETION_ORDER_TAB || 'Completion Order';
 
 if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY || !SHEET_ID) {
   console.warn('WARNING: GOOGLE_SERVICE_ACCOUNT_KEY and/or SHEET_ID not set — Sheets API calls will fail.');
@@ -90,6 +94,35 @@ app.get('/api/counties', async (req, res) => {
     res.json(out);
   } catch (err) {
     console.error('Sheets read error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Returns the hand-maintained completion order as an ordered array of FIPS
+// codes, read live so it reflects whatever's been typed into the sheet so
+// far. Unmatched/blank rows are dropped silently (logged server-side only —
+// the reveal page is meant to stay clean, no on-screen error banner).
+app.get('/api/completion-order', async (req, res) => {
+  try {
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `'${ORDER_TAB}'!A1:A200`,
+    });
+    const rows = result.data.values || [];
+    const order = [];
+    rows.forEach((row, i) => {
+      const name = (row[0] || '').trim();
+      if (!name) return;
+      const fips = NAME_TO_FIPS[name];
+      if (!fips) {
+        console.warn(`"${ORDER_TAB}" row ${i + 1}: county name "${name}" doesn't match any known NC county — skipping.`);
+        return;
+      }
+      order.push(fips);
+    });
+    res.json({ order });
+  } catch (err) {
+    console.error('Sheets read error (completion order):', err.message);
     res.status(500).json({ error: err.message });
   }
 });

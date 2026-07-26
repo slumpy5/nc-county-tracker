@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NC County Tracker — Completion Reveal</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson@3/dist/topojson.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f172a;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+
+    #map-wrap {
+      position: absolute;
+      inset: 0;
+    }
+
+    #map-wrap svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .county {
+      stroke: white;
+      stroke-width: 0.6;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .county-label {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 7px;
+      font-weight: 600;
+      fill: #1e293b;
+      text-anchor: middle;
+      dominant-baseline: central;
+      pointer-events: none;
+      paint-order: stroke fill;
+      stroke: rgba(255,255,255,0.85);
+      stroke-width: 2.5px;
+      stroke-linejoin: round;
+      letter-spacing: 0.01em;
+    }
+  </style>
+</head>
+<body>
+  <div id="map-wrap"></div>
+
+  <script>
+    'use strict';
+
+    // Blank/unfinished color matches the main tracker's "Unassigned" gray, so
+    // this page reads as a companion view, not a different product.
+    const BLANK = '#dde3ed';
+    const DONE = '#0c82e6';
+
+    // Reveal pacing: short interval between counties, accelerating toward
+    // the end. Eased with cubic-in so it starts readable and finishes fast.
+    const START_DELAY_MS = 260;
+    const END_DELAY_MS = 40;
+    const REVEAL_TRANSITION_MS = 320;
+    const FINAL_PAUSE_MS = 700;
+    const FADE_MS = 1400;
+
+    const COUNTIES = {
+      "37001":"Alamance","37003":"Alexander","37005":"Alleghany","37007":"Anson",
+      "37009":"Ashe","37011":"Avery","37013":"Beaufort","37015":"Bertie",
+      "37017":"Bladen","37019":"Brunswick","37021":"Buncombe","37023":"Burke",
+      "37025":"Cabarrus","37027":"Caldwell","37029":"Camden","37031":"Carteret",
+      "37033":"Caswell","37035":"Catawba","37037":"Chatham","37039":"Cherokee",
+      "37041":"Chowan","37043":"Clay","37045":"Cleveland","37047":"Columbus",
+      "37049":"Craven","37051":"Cumberland","37053":"Currituck","37055":"Dare",
+      "37057":"Davidson","37059":"Davie","37061":"Duplin","37063":"Durham",
+      "37065":"Edgecombe","37067":"Forsyth","37069":"Franklin","37071":"Gaston",
+      "37073":"Gates","37075":"Graham","37077":"Granville","37079":"Greene",
+      "37081":"Guilford","37083":"Halifax","37085":"Harnett","37087":"Haywood",
+      "37089":"Henderson","37091":"Hertford","37093":"Hoke","37095":"Hyde",
+      "37097":"Iredell","37099":"Jackson","37101":"Johnston","37103":"Jones",
+      "37105":"Lee","37107":"Lenoir","37109":"Lincoln","37111":"McDowell",
+      "37113":"Macon","37115":"Madison","37117":"Martin","37119":"Mecklenburg",
+      "37121":"Mitchell","37123":"Montgomery","37125":"Moore","37127":"Nash",
+      "37129":"New Hanover","37131":"Northampton","37133":"Onslow","37135":"Orange",
+      "37137":"Pamlico","37139":"Pasquotank","37141":"Pender","37143":"Perquimans",
+      "37145":"Person","37147":"Pitt","37149":"Polk","37151":"Randolph",
+      "37153":"Richmond","37155":"Robeson","37157":"Rockingham","37159":"Rowan",
+      "37161":"Rutherford","37163":"Sampson","37165":"Scotland","37167":"Stanly",
+      "37169":"Stokes","37171":"Surry","37173":"Swain","37175":"Transylvania",
+      "37177":"Tyrrell","37179":"Union","37181":"Vance","37183":"Wake",
+      "37185":"Warren","37187":"Washington","37189":"Watauga","37191":"Wayne",
+      "37193":"Wilkes","37195":"Wilson","37197":"Yadkin","37199":"Yancey"
+    };
+
+    function fipsOf(d) {
+      return String(d.id).padStart(5, '0');
+    }
+
+    async function fetchOrder() {
+      try {
+        const res = await fetch('/api/completion-order');
+        if (!res.ok) throw new Error('server error');
+        const data = await res.json();
+        return Array.isArray(data.order) ? data.order : [];
+      } catch (err) {
+        console.warn('Could not load completion order:', err);
+        return [];
+      }
+    }
+
+    function playReveal(order) {
+      let delayAcc = 0;
+      const n = order.length;
+      if (!n) return;
+
+      order.forEach((fips, i) => {
+        const t = n > 1 ? i / (n - 1) : 1;
+        const eased = d3.easeCubicIn(t);
+        const stepDelay = START_DELAY_MS - (START_DELAY_MS - END_DELAY_MS) * eased;
+        delayAcc += stepDelay;
+
+        setTimeout(() => {
+          d3.select(`path[data-fips="${fips}"]`)
+            .transition()
+            .duration(REVEAL_TRANSITION_MS)
+            .attr('fill', DONE);
+        }, delayAcc);
+      });
+
+      // Once the last county has finished its own fill transition, fade the
+      // borders and labels away, leaving a solid blue silhouette of the state.
+      setTimeout(() => {
+        d3.selectAll('.county')
+          .transition()
+          .duration(FADE_MS)
+          .style('stroke-opacity', 0);
+        d3.selectAll('.county-label')
+          .transition()
+          .duration(FADE_MS)
+          .style('opacity', 0);
+      }, delayAcc + REVEAL_TRANSITION_MS + FINAL_PAUSE_MS);
+    }
+
+    async function init() {
+      const wrap = document.getElementById('map-wrap');
+
+      const [us, order] = await Promise.all([
+        d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json'),
+        fetchOrder(),
+      ]);
+
+      const allCounties = topojson.feature(us, us.objects.counties);
+      const ncFeats = allCounties.features.filter(f => String(f.id).startsWith('37'));
+      const ncCollection = { type: 'FeatureCollection', features: ncFeats };
+
+      const W = wrap.clientWidth;
+      const H = wrap.clientHeight;
+      const pad = 28;
+
+      const proj = d3.geoMercator()
+        .fitExtent([[pad, pad], [W - pad, H - pad]], ncCollection);
+      const pathGen = d3.geoPath().projection(proj);
+
+      const svg = d3.select(wrap).append('svg')
+        .attr('viewBox', `0 0 ${W} ${H}`)
+        .style('width', '100%')
+        .style('height', '100%');
+
+      const layer = svg.append('g');
+
+      layer.selectAll('.county')
+        .data(ncFeats)
+        .join('path')
+        .attr('class', 'county')
+        .attr('data-fips', d => fipsOf(d))
+        .attr('d', pathGen)
+        .attr('fill', BLANK);
+
+      layer.selectAll('.county-label')
+        .data(ncFeats)
+        .join('text')
+        .attr('class', 'county-label')
+        .attr('x', d => pathGen.centroid(d)[0])
+        .attr('y', d => pathGen.centroid(d)[1])
+        .text(d => COUNTIES[fipsOf(d)] || '');
+
+      playReveal(order);
+    }
+
+    init();
+  </script>
+</body>
+</html>
