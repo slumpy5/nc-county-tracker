@@ -14,11 +14,45 @@
       height: 100vh;
       width: 100vw;
       overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    #title-block {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 128px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    #title-block h1 {
+      color: white;
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    #title-block p {
+      color: #7fb4e8;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
     #map-wrap {
       position: absolute;
-      inset: 0;
+      top: 128px;
+      left: 0;
+      right: 0;
+      bottom: 0;
     }
 
     #map-wrap svg {
@@ -50,6 +84,10 @@
   </style>
 </head>
 <body>
+  <div id="title-block">
+    <h1>100 Days Out Weekend of Action</h1>
+    <p>100 Days. 100 Counties. 100 Canvasses</p>
+  </div>
   <div id="map-wrap"></div>
 
   <script>
@@ -67,6 +105,8 @@
     const REVEAL_TRANSITION_MS = 320;
     const FINAL_PAUSE_MS = 700;
     const FADE_MS = 1400;
+    const LOGO_DELAY_MS = 300;   // pause after borders/labels finish fading
+    const LOGO_FADE_MS = 1800;
 
     const COUNTIES = {
       "37001":"Alamance","37003":"Alexander","37005":"Alleghany","37007":"Anson",
@@ -112,7 +152,7 @@
       }
     }
 
-    function playReveal(order) {
+    function playReveal(order, onSilhouetteDone) {
       let delayAcc = 0;
       const n = order.length;
       if (!n) return;
@@ -133,6 +173,7 @@
 
       // Once the last county has finished its own fill transition, fade the
       // borders and labels away, leaving a solid blue silhouette of the state.
+      const fadeStart = delayAcc + REVEAL_TRANSITION_MS + FINAL_PAUSE_MS;
       setTimeout(() => {
         d3.selectAll('.county')
           .transition()
@@ -142,7 +183,11 @@
           .transition()
           .duration(FADE_MS)
           .style('opacity', 0);
-      }, delayAcc + REVEAL_TRANSITION_MS + FINAL_PAUSE_MS);
+      }, fadeStart);
+
+      if (onSilhouetteDone) {
+        setTimeout(onSilhouetteDone, fadeStart + FADE_MS + LOGO_DELAY_MS);
+      }
     }
 
     async function init() {
@@ -157,6 +202,13 @@
       const ncFeats = allCounties.features.filter(f => String(f.id).startsWith('37'));
       const ncCollection = { type: 'FeatureCollection', features: ncFeats };
 
+      // Raw (non-GeoJSON) geometry objects, filtered the same way, for
+      // topojson.merge — which needs the topology's own geometry objects,
+      // not the Feature-converted versions above — to dissolve the internal
+      // county borders into one outer state outline for the logo clip-path.
+      const ncGeoms = us.objects.counties.geometries.filter(g => String(g.id).padStart(5, '0').startsWith('37'));
+      const ncOutline = topojson.merge(us, ncGeoms);
+
       const W = wrap.clientWidth;
       const H = wrap.clientHeight;
       const pad = 28;
@@ -169,6 +221,11 @@
         .attr('viewBox', `0 0 ${W} ${H}`)
         .style('width', '100%')
         .style('height', '100%');
+
+      svg.append('clipPath')
+        .attr('id', 'nc-outline-clip')
+        .append('path')
+        .attr('d', pathGen(ncOutline));
 
       const layer = svg.append('g');
 
@@ -188,7 +245,21 @@
         .attr('y', d => pathGen.centroid(d)[1])
         .text(d => COUNTIES[fipsOf(d)] || '');
 
-      playReveal(order);
+      // Logo, clipped to the state outline, sized to cover its bounding box
+      // (cropped like CSS background-size:cover via preserveAspectRatio),
+      // hidden until the reveal + silhouette fade finish.
+      const [[x0, y0], [x1, y1]] = pathGen.bounds(ncOutline);
+      const logo = svg.append('image')
+        .attr('href', 'nc-dems-logo.png')
+        .attr('x', x0).attr('y', y0)
+        .attr('width', x1 - x0).attr('height', y1 - y0)
+        .attr('preserveAspectRatio', 'xMidYMid slice')
+        .attr('clip-path', 'url(#nc-outline-clip)')
+        .style('opacity', 0);
+
+      playReveal(order, () => {
+        logo.transition().duration(LOGO_FADE_MS).style('opacity', 1);
+      });
     }
 
     init();
