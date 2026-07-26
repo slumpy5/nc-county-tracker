@@ -106,11 +106,12 @@
     const START_DELAY_MS = 260;
     const END_DELAY_MS = 110;
     const REVEAL_TRANSITION_MS = 550; // slower per-county color turn
-    const FINAL_PAUSE_MS = 700;
-    const FADE_MS = 900; // border/label fade-out — sped up from the original 1400ms
+    const FINAL_PAUSE_MS = 250; // pause before the border/label fade starts — shortened, was dragging
+    const FADE_MS = 900; // border/label fade-out
     const LOGO_DELAY_MS = 300;   // pause after borders/labels finish fading
     const LOGO_FADE_MS = 1800;
-    const LOGO_SCALE = 0.42; // fraction of the state's bounding-box width — shrunk to fit fully inside the silhouette, not cropped
+    const LOGO_SCALE = 0.58; // fraction of the state's bounding-box width
+    const LOGO_Y_SHIFT = -0.12; // fraction of bounding-box height to shift the logo up from the outline's centroid
 
     const COUNTIES = {
       "37001":"Alamance","37003":"Alexander","37005":"Alleghany","37007":"Anson",
@@ -258,9 +259,10 @@
       const [[x0, y0], [x1, y1]] = pathGen.bounds(ncOutline);
       const logoBoxW = (x1 - x0) * LOGO_SCALE;
       const logoBoxH = (y1 - y0) * LOGO_SCALE;
+      const logoCy = cy + (y1 - y0) * LOGO_Y_SHIFT;
       const logo = svg.append('image')
         .attr('href', 'nc-dems-logo.png')
-        .attr('x', cx - logoBoxW / 2).attr('y', cy - logoBoxH / 2)
+        .attr('x', cx - logoBoxW / 2).attr('y', logoCy - logoBoxH / 2)
         .attr('width', logoBoxW).attr('height', logoBoxH)
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .attr('clip-path', 'url(#nc-outline-clip)')
