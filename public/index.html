@@ -100,28 +100,31 @@
     .county.active { stroke: #0f172a; stroke-width: 2.5; }
 
     /* Completed counties: filled with a real gold foil photo (gold-foil.png,
-       stretched into each county's shape via the #gold-foil pattern below),
-       plus a combined brightness/saturation pulse and soft outward glow —
-       verified against a local preview before this went in. */
-    .county.completed {
-      animation: gold-glow-pulse 3.6s ease-in-out infinite;
+       stretched into each county's shape via the #gold-foil pattern below).
+       The fill itself is static — no animated filter here — because
+       animating `filter` forces a re-rasterize of that element every frame,
+       which got very laggy while panning/zooming with several completed
+       counties on screen at once. The glow/pulse lives entirely in
+       .county-halo below instead, a separate, cheap layer. */
+
+    /* A soft halo behind each completed county: a flat-colored copy of the
+       same shape with a *static* blur (computed once, not animated) — only
+       opacity/transform are animated, which are compositor-only and don't
+       force a repaint, unlike animating the blur itself. */
+    .county-halo {
+      pointer-events: none;
+      fill: #ffb300;
+      filter: blur(7px);
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: halo-pulse 3.6s ease-in-out infinite;
     }
-    @keyframes gold-glow-pulse {
-      0%, 100% {
-        filter:
-          brightness(1) saturate(1)
-          drop-shadow(0 0 3px rgba(255, 205, 60, 0.5))
-          drop-shadow(0 0 8px rgba(255, 190, 40, 0.35));
-      }
-      50% {
-        filter:
-          brightness(1.3) saturate(1.25)
-          drop-shadow(0 0 11px rgba(255, 218, 120, 0.95))
-          drop-shadow(0 0 24px rgba(255, 190, 40, 0.65));
-      }
+    @keyframes halo-pulse {
+      0%, 100% { opacity: 0.3;  transform: scale(1); }
+      50%      { opacity: 0.78; transform: scale(1.035); }
     }
     @media (prefers-reduced-motion: reduce) {
-      .county.completed { animation: none; }
+      .county-halo { animation: none; opacity: 0.5; }
     }
 
     #zoom-controls {
@@ -592,6 +595,17 @@
         });
 
         const zoomLayer = svg.append('g').attr('class', 'zoom-layer');
+
+        // Halo layer for completed counties, added before the main county
+        // paths so it renders behind them. Only as many elements as there
+        // are completed counties — not all 100 — since this is the one
+        // animated layer (see .county-halo).
+        const completedFeats = ncFeats.filter(d => !!db[fipsOf(d)]?.completed);
+        zoomLayer.selectAll('.county-halo')
+          .data(completedFeats)
+          .join('path')
+          .attr('class', 'county-halo')
+          .attr('d', pathGen);
 
         zoomLayer.selectAll('.county')
           .data(ncFeats)
