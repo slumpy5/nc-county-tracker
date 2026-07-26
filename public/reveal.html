@@ -10,7 +10,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #0f172a;
+      background: #20212f;
       height: 100vh;
       width: 100vw;
       overflow: hidden;
@@ -96,17 +96,20 @@
     // Blank/unfinished color matches the main tracker's "Unassigned" gray, so
     // this page reads as a companion view, not a different product.
     const BLANK = '#dde3ed';
-    const DONE = '#0c82e6';
+    const DONE = '#38aae1';
 
-    // Reveal pacing: short interval between counties, accelerating toward
-    // the end. Eased with cubic-in so it starts readable and finishes fast.
+    // Reveal pacing: short interval between counties. Eased with cubic-OUT
+    // (steep at the start, leveling off later) so most of the speed-up
+    // happens early, then settles into a more moderate top speed rather than
+    // accelerating all the way to a blur by the end.
     const START_DELAY_MS = 260;
-    const END_DELAY_MS = 40;
-    const REVEAL_TRANSITION_MS = 320;
+    const END_DELAY_MS = 110;
+    const REVEAL_TRANSITION_MS = 550; // slower per-county color turn
     const FINAL_PAUSE_MS = 700;
     const FADE_MS = 1400;
     const LOGO_DELAY_MS = 300;   // pause after borders/labels finish fading
     const LOGO_FADE_MS = 1800;
+    const LOGO_SCALE = 0.42; // fraction of the state's bounding-box width — shrunk to fit fully inside the silhouette, not cropped
 
     const COUNTIES = {
       "37001":"Alamance","37003":"Alexander","37005":"Alleghany","37007":"Anson",
@@ -159,7 +162,7 @@
 
       order.forEach((fips, i) => {
         const t = n > 1 ? i / (n - 1) : 1;
-        const eased = d3.easeCubicIn(t);
+        const eased = d3.easeCubicOut(t);
         const stepDelay = START_DELAY_MS - (START_DELAY_MS - END_DELAY_MS) * eased;
         delayAcc += stepDelay;
 
@@ -245,15 +248,20 @@
         .attr('y', d => pathGen.centroid(d)[1])
         .text(d => COUNTIES[fipsOf(d)] || '');
 
-      // Logo, clipped to the state outline, sized to cover its bounding box
-      // (cropped like CSS background-size:cover via preserveAspectRatio),
-      // hidden until the reveal + silhouette fade finish.
+      // Logo, clipped to the state outline, shrunk to fit entirely inside it
+      // (preserveAspectRatio "meet" = contain, not "slice" = cover) and
+      // centered on the polygon's own centroid rather than the bounding
+      // box's center, since NC's shape is irregular — hidden until the
+      // reveal + silhouette fade finish.
+      const [cx, cy] = pathGen.centroid(ncOutline);
       const [[x0, y0], [x1, y1]] = pathGen.bounds(ncOutline);
+      const logoBoxW = (x1 - x0) * LOGO_SCALE;
+      const logoBoxH = (y1 - y0) * LOGO_SCALE;
       const logo = svg.append('image')
         .attr('href', 'nc-dems-logo.png')
-        .attr('x', x0).attr('y', y0)
-        .attr('width', x1 - x0).attr('height', y1 - y0)
-        .attr('preserveAspectRatio', 'xMidYMid slice')
+        .attr('x', cx - logoBoxW / 2).attr('y', cy - logoBoxH / 2)
+        .attr('width', logoBoxW).attr('height', logoBoxH)
+        .attr('preserveAspectRatio', 'xMidYMid meet')
         .attr('clip-path', 'url(#nc-outline-clip)')
         .style('opacity', 0);
 
