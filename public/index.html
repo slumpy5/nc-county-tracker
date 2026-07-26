@@ -110,31 +110,31 @@
     /* Glow behind each completed county: two flat-colored copies of the same
        shape (tight+bright, wide+soft — a proper glow falloff instead of one
        flat blob) each with a *static* blur (computed once, never animated).
-       Only opacity/transform animate, which are compositor-only and don't
-       force a repaint — that's what keeps this cheap regardless of scroll. */
+       Only opacity animates — no `transform` here, deliberately: an animated
+       CSS transform on an element that also has `filter`, sitting inside the
+       map's zoomed/scaled group, triggered real rendering glitches during
+       zoom (a known Chromium issue with filter-region recalculation under a
+       transformed ancestor). Opacity-only avoids that entirely while staying
+       just as cheap — compositor-only, no repaint. */
     .county-halo-outer {
       pointer-events: none;
       fill: #ffaa00;
-      filter: blur(26px);
-      transform-box: fill-box;
-      transform-origin: center;
+      filter: blur(30px);
       animation: halo-outer-pulse 3.4s ease-in-out infinite;
     }
     .county-halo-inner {
       pointer-events: none;
       fill: #ffd23f;
-      filter: blur(9px);
-      transform-box: fill-box;
-      transform-origin: center;
+      filter: blur(10px);
       animation: halo-inner-pulse 3.4s ease-in-out infinite;
     }
     @keyframes halo-outer-pulse {
-      0%, 100% { opacity: 0.55; transform: scale(1.05); }
-      50%      { opacity: 1;    transform: scale(1.22); }
+      0%, 100% { opacity: 0.5; }
+      50%      { opacity: 1;   }
     }
     @keyframes halo-inner-pulse {
-      0%, 100% { opacity: 0.6; transform: scale(1);    }
-      50%      { opacity: 1;   transform: scale(1.08); }
+      0%, 100% { opacity: 0.55; }
+      50%      { opacity: 1;    }
     }
 
     /* A pulsing shine directly on the gold itself — same shape, blended with
