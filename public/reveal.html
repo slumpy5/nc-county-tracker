@@ -30,18 +30,19 @@
       gap: 6px;
       text-align: center;
       pointer-events: none;
+      font-family: Verdana, Geneva, sans-serif;
     }
 
     #title-block h1 {
       color: white;
-      font-size: 30px;
+      font-size: 34px;
       font-weight: 800;
       letter-spacing: -0.01em;
     }
 
     #title-block p {
       color: #7fb4e8;
-      font-size: 15px;
+      font-size: 17px;
       font-weight: 600;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -106,7 +107,7 @@
     const END_DELAY_MS = 110;
     const REVEAL_TRANSITION_MS = 550; // slower per-county color turn
     const FINAL_PAUSE_MS = 700;
-    const FADE_MS = 1400;
+    const FADE_MS = 900; // border/label fade-out — sped up from the original 1400ms
     const LOGO_DELAY_MS = 300;   // pause after borders/labels finish fading
     const LOGO_FADE_MS = 1800;
     const LOGO_SCALE = 0.42; // fraction of the state's bounding-box width — shrunk to fit fully inside the silhouette, not cropped
